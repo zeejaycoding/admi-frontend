@@ -10,6 +10,7 @@ import {
   Button,
   TextField,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import {
   Check,
@@ -47,6 +48,7 @@ const AddReport = () => {
   const [coordinator, setCoordinator] = useState("");
   const [zonalLeader, setZonalLeader] = useState("");
   const [summary, setSummary] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (activeStep > 0) {
@@ -65,6 +67,8 @@ const AddReport = () => {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       const reportData = {
         date: reportDate,
@@ -85,6 +89,8 @@ const AddReport = () => {
       navigate("/admin/reports");
     } catch (err) {
       notify.error(err.message || "Failed to submit report");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1642,7 +1648,7 @@ case 3:
   </Button>
 ) : (
   <Button
-    disabled={uploadedFiles.length === 0}
+    disabled={uploadedFiles.length === 0 || submitting}
     onClick={handleSubmit}
     sx={{
       backgroundColor:
@@ -1653,13 +1659,21 @@ case 3:
       borderRadius: "12px",
       textTransform: "none",
       fontWeight: 600,
+      minWidth: "180px",
       "&:hover": {
         backgroundColor:
           uploadedFiles.length > 0 ? "#00A63E" : "#D1D5DB",
       },
     }}
   >
-    Submit Report
+    {submitting ? (
+      <>
+        <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />
+        Submitting...
+      </>
+    ) : (
+      "Submit Report"
+    )}
   </Button>
 )}
 </Box>
