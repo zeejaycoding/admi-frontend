@@ -119,7 +119,10 @@ const EventManagement = () => {
       setEventToDelete(null);
       notify.success(`Event "${eventToDelete.title}" deleted successfully!`);
     } catch (error) {
-      notify.error("Failed to delete event. Please try again.");
+      const msg =
+        (error && (error.message || error.error)) ||
+        "Failed to delete event. Please try again.";
+      notify.error(msg);
     }
   };
 
