@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getReportById } from "../../../store/slices/reportSlice";
 import { API_BASE_URL } from "../../../constants/api";
-import { Share2, Printer, Download, CheckCircle2, Clock3, TrendingUp,
+import { loadTokens } from "../../../services/utils/authUtils";import { Share2, Printer, Download, CheckCircle2, Clock3, TrendingUp,
   TrendingDown, HandHeart, Medal, Wallet,
   DollarSign, Paperclip, FileText, Building2,
   User, Calendar, MapPin, RotateCw,
@@ -17,6 +17,7 @@ const ReportDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { selectedReport, isLoading } = useSelector((state) => state.report);
+  const accessToken = useSelector((state) => state.auth?.accessToken);
 
   const report = selectedReport;
 
@@ -102,7 +103,8 @@ const ReportDetail = () => {
     const baseOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
     const fileUrl = file.fileUrl?.startsWith("/") ? `${baseOrigin}${file.fileUrl}` : file.fileUrl;
     try {
-      const token = localStorage.getItem("auth.accessToken");
+      const { accessToken: storedToken } = loadTokens();
+      const token = accessToken || storedToken;
       const response = await fetch(fileUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
