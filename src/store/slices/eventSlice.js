@@ -90,6 +90,7 @@ const initialState = {
   selectedEvent: null,
   analytics: null,
   isLoading: false,
+  isUpdating: false,
   error: null,
   success: false,
   pagination: {
@@ -198,11 +199,13 @@ const eventSlice = createSlice({
       // Update event
       .addCase(updateEvent.pending, (state) => {
         state.isLoading = true;
+        state.isUpdating = true;
         state.error = null;
         state.success = false;
       })
       .addCase(updateEvent.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isUpdating = false;
         const index = state.events.findIndex((e) => e.id === action.payload.id);
         if (index !== -1) {
           state.events[index] = action.payload;
@@ -213,6 +216,7 @@ const eventSlice = createSlice({
       })
       .addCase(updateEvent.rejected, (state, action) => {
         state.isLoading = false;
+        state.isUpdating = false;
         state.error = action.payload?.message || 'Failed to update event';
         state.success = false;
       })

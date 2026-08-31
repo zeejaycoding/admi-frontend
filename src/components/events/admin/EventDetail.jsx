@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,6 +15,7 @@ import {
   Share2,
   Download,
   Pencil,
+  Ban,
   Users,
   User,
   DollarSign,
@@ -26,15 +27,23 @@ import {
   Phone,
 } from "lucide-react";
 
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getEventById, clearSelectedEvent } from "../../../store/slices/eventSlice";
+import {
+  getEventById,
+  updateEvent,
+  clearSelectedEvent,
+  clearSuccess,
+} from "../../../store/slices/eventSlice";
+import { notify } from "../../../services/utils/authUtils";
+import EventEdit from "./EventEdit";
 
 const EventDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
-  const { selectedEvent, isLoading } = useSelector((state) => state.event);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const { selectedEvent, isLoading, isUpdating } = useSelector((state) => state.event);
 
   const event = (selectedEvent && selectedEvent.id === Number(id)) ? selectedEvent : location.state?.event;
 
@@ -44,6 +53,29 @@ const EventDetail = () => {
     }
     return () => { dispatch(clearSelectedEvent()); };
   }, [id, dispatch]);
+
+  const handleEditSuccess = () => {
+    setEditModalOpen(false);
+    dispatch(clearSuccess());
+    dispatch(getEventById(id));
+    notify.success("Event updated successfully!");
+  };
+
+  const handleCancelEvent = async () => {
+    try {
+      await dispatch(
+        updateEvent({
+          id: id,
+          updateData: { isActive: false },
+          thumbnailFile: null,
+        })
+      ).unwrap();
+      dispatch(getEventById(id));
+      notify.success("Event cancelled successfully!");
+    } catch (err) {
+      notify.error(err.message || "Failed to cancel event");
+    }
+  };
 
   if (!event) {
     return (
@@ -163,9 +195,7 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
 
           <Button
             startIcon={<Pencil size={16} />}
-            onClick={() => {
-              alert("Open edit modal here");
-            }}
+            onClick={() => setEditModalOpen(true)}
             sx={{
               backgroundColor: "#011A5A",
               color: "#fff",
@@ -459,8 +489,14 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
     <Box display="flex" flexDirection="column" gap={1.5}>
       <Button variant="outlined">Send Message</Button>
       <Button variant="outlined">Download QR Codes</Button>
-      <Button color="error" variant="outlined">
-        Cancel Event
+      <Button
+        color="error"
+        variant="outlined"
+        startIcon={<Ban size={16} />}
+        disabled={!event.isActive || isUpdating}
+        onClick={handleCancelEvent}
+      >
+        {isUpdating ? "Cancelling..." : "Cancel Event"}
       </Button>
     </Box>
   </Paper>
@@ -469,6 +505,18 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
 
         </Box>
       </Paper>
+
+      {editModalOpen && event && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <EventEdit
+              event={event}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </Box>
   );
 };
