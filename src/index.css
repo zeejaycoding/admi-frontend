@@ -26,6 +26,17 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+
+  /* Remove the default blue focus outline/ring when clicking into fields/buttons */
+  input:focus,
+  select:focus,
+  textarea:focus,
+  button:focus,
+  a:focus,
+  [tabindex]:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
 }
 
 @layer components {
