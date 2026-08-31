@@ -34,6 +34,7 @@ import {
 } from "../../../store/slices/eventSlice";
 import { notify } from "../../../services/utils/authUtils";
 import EventCreate from "../../events/admin/EventCreate";
+import EventEdit from "../../events/admin/EventEdit";
 import { useNavigate } from "react-router-dom";
 
 const EventManagement = () => {
@@ -43,6 +44,8 @@ const EventManagement = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const { events, analytics, isLoading, error } = useSelector((state) => state.event);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [page, setPage] = useState(0);
@@ -137,8 +140,16 @@ const EventManagement = () => {
     dispatch(getEventAnalytics());
   };
 
+  const handleEditSuccess = () => {
+    setEditModalOpen(false);
+    setEventToEdit(null);
+    dispatch(fetchAllEvents({}));
+    dispatch(getEventAnalytics());
+  };
+
   const handleEditEvent = (event) => {
-    notify.info("Event editing coming soon!");
+    setEventToEdit(event);
+    setEditModalOpen(true);
   };
 
   const handleRowClick = (params) => {
@@ -574,6 +585,19 @@ const EventManagement = () => {
             <EventCreate
               onSuccess={handleCreateSuccess}
               onCancel={() => setCreateModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Event Modal */}
+      {editModalOpen && eventToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <EventEdit
+              event={eventToEdit}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditModalOpen(false)}
             />
           </div>
         </div>
