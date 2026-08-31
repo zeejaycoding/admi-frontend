@@ -1,0 +1,5 @@
+# SECURITY: Block access to source map files
+/*.map  /404  404!
+
+# SPA routing - all other routes to index.html
+/*    /index.html   200

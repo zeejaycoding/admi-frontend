@@ -1,0 +1,97 @@
+import apiClient from '../utils/apiClient';
+
+const userService = {
+  // Get current user profile
+  async getCurrentUser() {
+    const { data } = await apiClient.get('/users/profile');
+    return data;
+  },
+
+  // Update user profile
+  async updateProfile(payload) {
+    const { data } = await apiClient.put('/users/profile', payload);
+    return data;
+  },
+
+  // Change password
+  async changePassword(payload) {
+    const { data } = await apiClient.post('/users/change-password', payload);
+    return data;
+  },
+
+  // Get user dashboard
+  async getUserDashboard() {
+    const { data } = await apiClient.get('/users/dashboard');
+    return data;
+  },
+
+  // Get all users (Admin)
+  async getAllUsers(params = {}) {
+    const { data } = await apiClient.get('/users/all', { params });
+    return data;
+  },
+
+  // Search users (Admin)
+  async searchUsers(params = {}) {
+    const { data } = await apiClient.get('/users/all', { params });
+    return data;
+  },
+
+  // Get user profile by ID (Admin)
+  async getUserById(userId) {
+    const { data } = await apiClient.get(`/users/profile/${userId}`);
+    return data;
+  },
+
+  // Assign role (Super Admin)
+  async assignRole(payload) {
+    const { data } = await apiClient.post('/users/roles/assign', payload);
+    return data;
+  },
+
+  // Remove role (Super Admin)
+  async removeRole(userId, roleName) {
+    const { data } = await apiClient.delete(`/users/${userId}/roles/${roleName}`);
+    return data;
+  },
+
+  // Get user roles (Admin)
+  async getUserRoles(userId) {
+    const { data } = await apiClient.get(`/users/${userId}/roles`);
+    return data;
+  },
+
+  // Activate user (Super Admin)
+  async activateUser(userId) {
+    const { data } = await apiClient.post(`/users/${userId}/activate`);
+    return data;
+  },
+
+  // Deactivate user (Super Admin)
+  async deactivateUser(userId) {
+    const { data } = await apiClient.post(`/users/${userId}/deactivate`);
+    return data;
+  },
+
+  // Get user statistics (Admin)
+  async getUserStatistics() {
+    const { data } = await apiClient.get('/users/stats');
+    return data;
+  },
+
+  // Create user (Admin)
+  async createUser(payload) {
+    const { data } = await apiClient.post('/users/create', payload);
+    return data;
+  },
+
+  // Reset user password (Admin)
+  async resetUserPassword(payload) {
+    const { data } = await apiClient.post(`/users/${payload.userId}/reset-password`, {
+      newPassword: payload.newPassword,
+    });
+    return data;
+  },
+};
+
+export default userService;

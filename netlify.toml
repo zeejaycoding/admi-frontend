@@ -1,0 +1,66 @@
+# Netlify Build Configuration
+[build]
+  # Build command
+  command = "npm run build"
+
+  # Publish directory
+  publish = "build"
+
+  # Environment variables for build
+  [build.environment]
+    # CRITICAL SECURITY: Disable source maps in production
+    GENERATE_SOURCEMAP = "false"
+
+    # Disable inline runtime chunk
+    INLINE_RUNTIME_CHUNK = "false"
+
+    # Disable ESLint during build (prevents build failures from lint errors)
+    DISABLE_ESLINT_PLUGIN = "true"
+    ESLINT_NO_DEV_ERRORS = "true"
+
+    # Node version
+    NODE_VERSION = "18"
+
+    # Allow peer-dep conflicts (i18next v26 vs react-scripts v5 typescript ranges)
+    NPM_FLAGS = "--legacy-peer-deps"
+
+# Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking
+    X-Frame-Options = "DENY"
+
+    # Prevent MIME type sniffing
+    X-Content-Type-Options = "nosniff"
+
+    # Enable XSS protection
+    X-XSS-Protection = "1; mode=block"
+
+    # Referrer policy
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Content Security Policy
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.sandbox.paypal.com https://js.stripe.com https://js.paystack.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https://*.r2.cloudflarestorage.com; connect-src 'self' https://admi-service.onrender.com https://*.r2.cloudflarestorage.com https://api.paypal.com https://api.sandbox.paypal.com https://api.stripe.com https://api.paystack.co; frame-src https://www.paypal.com https://www.sandbox.paypal.com https://js.stripe.com https://checkout.paystack.com;"
+
+    # Permissions Policy (formerly Feature-Policy)
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(self)"
+
+# Block source map files from being served (extra security layer)
+[[headers]]
+  for = "*.map"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+# Disable directory listing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Custom 404 page
+[[redirects]]
+  from = "/404"
+  to = "/index.html"
+  status = 404

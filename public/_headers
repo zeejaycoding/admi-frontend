@@ -1,0 +1,29 @@
+# Security Headers for Netlify Deployment
+# These headers will be applied to all pages
+
+/*
+  # Prevent source map files from being indexed
+  X-Robots-Tag: noindex
+
+  # Prevent clickjacking attacks
+  X-Frame-Options: DENY
+
+  # Prevent MIME type sniffing
+  X-Content-Type-Options: nosniff
+
+  # Enable browser XSS protection
+  X-XSS-Protection: 1; mode=block
+
+  # Referrer policy
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Content Security Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.sandbox.paypal.com https://js.stripe.com https://js.paystack.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https://*.r2.cloudflarestorage.com; connect-src 'self' https://admi-service.onrender.com https://*.r2.cloudflarestorage.com https://api.paypal.com https://api.sandbox.paypal.com https://api.stripe.com https://api.paystack.co; frame-src https://www.paypal.com https://www.sandbox.paypal.com https://js.stripe.com https://checkout.paystack.com;
+
+  # Permissions Policy
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(self)
+
+# Explicitly block .map files from being served
+/*.map
+  X-Robots-Tag: noindex
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
