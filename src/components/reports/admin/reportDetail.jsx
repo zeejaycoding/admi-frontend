@@ -100,12 +100,11 @@ const ReportDetail = () => {
   };
 
   const downloadReceipt = async (file) => {
-    const baseOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-    const fileUrl = file.fileUrl?.startsWith("/") ? `${baseOrigin}${file.fileUrl}` : file.fileUrl;
+    const { accessToken: storedToken } = loadTokens();
+    const token = accessToken || storedToken;
+    const downloadUrl = `${API_BASE_URL}/reports/${report.id}/receipts/${file.id}/download`;
     try {
-      const { accessToken: storedToken } = loadTokens();
-      const token = accessToken || storedToken;
-      const response = await fetch(fileUrl, {
+      const response = await fetch(downloadUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) throw new Error("Download failed");
@@ -123,7 +122,7 @@ const ReportDetail = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      window.open(fileUrl, "_blank");
+      window.open(downloadUrl, "_blank");
     }
   };
 

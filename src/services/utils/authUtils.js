@@ -2,14 +2,17 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from './constants';
 import toast from 'react-hot-toast';
 
 // Helper functions for cookie management (for cross-subdomain auth in production)
+// COOKIE_DOMAIN is optional: set it (e.g. ".drabeldamina.org") only when you need
+// to share the session across subdomains. When unset, cookies are scoped to the
+// current host (works on any deployment origin, e.g. *.onrender.com).
+const cookieDomain = process.env.REACT_APP_COOKIE_DOMAIN
+  ? `; domain=${process.env.REACT_APP_COOKIE_DOMAIN}`
+  : '';
+
 function setCookie(name, value, days = 7) {
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  // Set domain to parent domain for cross-subdomain access in production
-  const isProduction = process.env.NODE_ENV === 'production';
-  const domain = isProduction ? '.drabeldamina.org' : '';
-  const domainStr = domain ? `; domain=${domain}` : '';
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/${domainStr}; SameSite=Lax; Secure`;
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax; Secure${cookieDomain}`;
 }
 
 function getCookie(name) {
@@ -24,10 +27,7 @@ function getCookie(name) {
 }
 
 function deleteCookie(name) {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const domain = isProduction ? '.drabeldamina.org' : '';
-  const domainStr = domain ? `; domain=${domain}` : '';
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainStr}`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax${cookieDomain}`;
 }
 
 export function saveTokens({ accessToken, refreshToken }) {
