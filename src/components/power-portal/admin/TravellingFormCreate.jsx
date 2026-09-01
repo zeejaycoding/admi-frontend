@@ -139,7 +139,7 @@ const TravellingFormCreate = () => {
   elevation={0}
   sx={{
     mt: 3,
-    p: 4,
+    p: { xs: 2, sm: 4 },
     width: "100%",
     backgroundColor: "#FFFFFF",
     border: "1px solid #00000014",
@@ -370,6 +370,7 @@ const TravellingFormCreate = () => {
     mt: 4,
     display: "flex",
     justifyContent: "flex-end",
+    flexDirection: { xs: "column", sm: "row" },
     gap: 2,
   }}
 >
@@ -381,6 +382,7 @@ const TravellingFormCreate = () => {
       px: 4,
       py: 1.4,
       minWidth: "140px",
+      width: { xs: "100%", sm: "auto" },
       borderRadius: "8px",
       fontSize: "16px",
       fontWeight: 400,
@@ -402,6 +404,7 @@ const TravellingFormCreate = () => {
       px: 4,
       py: 1.4,
       minWidth: "160px",
+      width: { xs: "100%", sm: "auto" },
       borderRadius: "8px",
       fontSize: "16px",
       fontWeight: 400,

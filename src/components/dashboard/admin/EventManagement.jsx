@@ -208,7 +208,7 @@ const EventManagement = () => {
           width: "100%",
           backgroundColor: "#F5F6FA !important",
           borderRadius: "14px",
-          padding: "24px",
+          padding: { xs: "16px", sm: "24px" },
         }}
       >
         <Grid item xs={12} sm={6} md={3}>
@@ -278,7 +278,7 @@ const EventManagement = () => {
             }}
             sx={{
               flex: 1,
-              minWidth: 300,
+              minWidth: { xs: "100%", sm: 300 },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
@@ -290,8 +290,8 @@ const EventManagement = () => {
               display: "flex",
               alignItems: "center",
               gap: 1,
-              width: "auto",
-              minWidth: "100px",
+              width: { xs: "100%", sm: "auto" },
+              minWidth: { xs: "100%", sm: "100px" },
               height: "41px",
               px: 1.5,
               borderRadius: "8px",
@@ -341,6 +341,7 @@ const EventManagement = () => {
               borderRadius: 2,
               fontWeight: 600,
               textTransform: "none",
+              width: { xs: "100%", sm: "auto" },
               "&:hover": {
                 backgroundColor: "#011A5A",
               },

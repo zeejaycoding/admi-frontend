@@ -113,7 +113,7 @@ const ChildCertificate = () => {
           #print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
       `}</style>
-      <Box sx={{ p: 3, backgroundColor: "#f8fafc" }}>
+      <Box sx={{ p: { xs: 1.5, sm: 3 }, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
         <Box sx={{ "@media print": { display: "none" } }}>
           <Box
             sx={{
@@ -122,19 +122,23 @@ const ChildCertificate = () => {
               alignItems: "center",
               mb: 3,
               gap: 2,
-              flexWrap: "wrap",
+              flexDirection: { xs: "column", sm: "row" },
             }}
           >
-            <Box>
-              <Typography variant="h4" fontWeight={700} sx={{ color: "#111827", mb: 0.5 }}>
+            <Box sx={{ width: { xs: "100%", sm: "auto" }, textAlign: { xs: "center", sm: "left" } }}>
+              <Typography
+                variant="h4"
+                fontWeight={700}
+                sx={{ color: "#111827", mb: 0.5, fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+              >
                 Child Dedication Certificate
               </Typography>
-              <Typography sx={{ color: "#6B7280", fontSize: "15px" }}>
+              <Typography sx={{ color: "#6B7280", fontSize: { xs: "13px", sm: "15px" } }}>
                 Generate and access child dedication certificates on the portal
               </Typography>
             </Box>
 
-            <Box display="flex" gap={1.5} flexWrap="wrap">
+            <Box display="flex" gap={1.5} flexWrap="wrap" sx={{ width: { xs: "100%", sm: "auto" }, justifyContent: { xs: "center", sm: "flex-end" } }}>
               <Button
                 startIcon={<LucideMail size={16} />}
                 disabled={sendingEmail}
@@ -147,6 +151,7 @@ const ChildCertificate = () => {
                   py: 1,
                   textTransform: "none",
                   fontWeight: 600,
+                  flex: { xs: "1 1 auto", sm: "0 0 auto" },
                   "&:hover": { backgroundColor: "#011A5A" },
                 }}
               >
@@ -164,6 +169,7 @@ const ChildCertificate = () => {
                   py: 1,
                   textTransform: "none",
                   fontWeight: 600,
+                  flex: { xs: "1 1 auto", sm: "0 0 auto" },
                   "&:hover": { backgroundColor: "#F9FAFB" },
                 }}
                 onClick={handlePrint}
@@ -182,6 +188,7 @@ const ChildCertificate = () => {
                   py: 1,
                   textTransform: "none",
                   fontWeight: 600,
+                  flex: { xs: "1 1 auto", sm: "0 0 auto" },
                   "&:hover": { backgroundColor: "#F9FAFB" },
                 }}
                 onClick={handleDownloadPDF}
@@ -200,6 +207,7 @@ const ChildCertificate = () => {
             width: "100%",
             maxWidth: "1000px",
             mx: "auto",
+            px: { xs: 0, sm: 2 },
           }}
         >
           <Box

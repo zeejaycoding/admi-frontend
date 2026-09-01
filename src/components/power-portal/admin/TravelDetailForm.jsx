@@ -196,7 +196,7 @@ const TravelDetailForm = () => {
   elevation={0}
   sx={{
     mt: 3,
-    p: 4,
+    p: { xs: 2, sm: 4 },
     borderRadius: "12px",
     border: "1px solid #00000014",
     backgroundColor: "#FFFFFF",
@@ -226,8 +226,8 @@ const TravelDetailForm = () => {
 
 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
   {/* Row 1 */}
-  <Box sx={{ display: "flex", gap: 8 }}>
-    <Box sx={{ minWidth: 220 }}>
+  <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 8 } }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -250,7 +250,7 @@ const TravelDetailForm = () => {
       </Typography>
     </Box>
 
-    <Box sx={{ minWidth: 220 }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -275,8 +275,8 @@ const TravelDetailForm = () => {
   </Box>
 
   {/* Row 2 */}
-  <Box sx={{ display: "flex", gap: 8 }}>
-    <Box sx={{ minWidth: 220 }}>
+  <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 8 } }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -299,7 +299,7 @@ const TravelDetailForm = () => {
       </Typography>
     </Box>
 
-    <Box sx={{ minWidth: 220 }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -331,7 +331,7 @@ const TravelDetailForm = () => {
   elevation={0}
   sx={{
     mt: 3,
-    p: 4,
+    p: { xs: 2, sm: 4 },
     borderRadius: "12px",
     border: "1px solid #00000014",
     backgroundColor: "#FFFFFF",
@@ -361,8 +361,8 @@ const TravelDetailForm = () => {
 
 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
   {/* Row 1 */}
-  <Box sx={{ display: "flex", gap: 8 }}>
-    <Box sx={{ minWidth: 220 }}>
+  <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 8 } }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -385,7 +385,7 @@ const TravelDetailForm = () => {
       </Typography>
     </Box>
 
-    <Box sx={{ minWidth: 220 }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -410,8 +410,8 @@ const TravelDetailForm = () => {
   </Box>
 
   {/* Row 2 */}
-  <Box sx={{ display: "flex", gap: 8 }}>
-    <Box sx={{ minWidth: 220 }}>
+  <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 8 } }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -434,7 +434,7 @@ const TravelDetailForm = () => {
       </Typography>
     </Box>
 
-    <Box sx={{ minWidth: 220 }}>
+    <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
       <Typography
         sx={{
           color: "#6A7282",
@@ -499,8 +499,8 @@ const TravelDetailForm = () => {
     mt: 4,
     width: "100%",
     display: "flex",
+    flexDirection: { xs: "column", sm: "row" },
     gap: 2,
-    flexWrap: { xs: "wrap", md: "nowrap" },
   }}
 >
   <Button
@@ -509,6 +509,7 @@ const TravelDetailForm = () => {
     disabled={actionLoading || travelForm?.status !== "Pending"}
     sx={{
       flex: 1,
+      width: { xs: "100%", sm: "auto" },
       backgroundColor: travelForm?.status === "Pending" ? "#030213" : "#9CA3AF",
       color: "#FFFFFF",
       borderRadius: "8px",
@@ -529,6 +530,7 @@ const TravelDetailForm = () => {
     disabled={actionLoading || travelForm?.status !== "Pending"}
     sx={{
       flex: 1,
+      width: { xs: "100%", sm: "auto" },
       backgroundColor: travelForm?.status === "Pending" ? "#D4183D" : "#9CA3AF",
       color: "#FFFFFF",
       borderRadius: "8px",
@@ -548,6 +550,7 @@ const TravelDetailForm = () => {
     variant="outlined"
     sx={{
       flex: 1,
+      width: { xs: "100%", sm: "auto" },
       backgroundColor: "#FFFFFF",
       color: "#0A0A0A",
       border: "1px solid #0000001A",
@@ -570,6 +573,7 @@ const TravelDetailForm = () => {
     variant="outlined"
     sx={{
       flex: 1,
+      width: { xs: "100%", sm: "auto" },
       backgroundColor: "#FFFFFF",
       color: "#0A0A0A",
       border: "1px solid #0000001A",

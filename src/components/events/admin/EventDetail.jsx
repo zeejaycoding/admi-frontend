@@ -97,7 +97,7 @@ const EventDetail = () => {
     : null;
 
   return (
-    <Box sx={{ p: 3, background: "#f7f8fc", minHeight: "100vh" }}>
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, background: "#f7f8fc", minHeight: "100vh" }}>
       {/* Header */}
       <Box
         sx={{
@@ -105,11 +105,23 @@ const EventDetail = () => {
           justifyContent: "space-between",
           mb: 3,
           alignItems: "center",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
         }}
       >
-        <Box>
-          <Box display="flex" alignItems="center" gap={2} mb={0.5}>
-            <Typography variant="h4" fontWeight={700}>
+        <Box sx={{ width: "100%", textAlign: { xs: "left", sm: "inherit" } }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={2}
+            mb={0.5}
+            flexWrap="wrap"
+          >
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{ fontSize: { xs: "1.5rem", sm: "2rem" }, wordBreak: "break-word" }}
+            >
               {event.title}
             </Typography>
             <Chip label={event.status} color="primary" size="small" />
@@ -117,7 +129,12 @@ const EventDetail = () => {
           <Typography color="gray">Event ID: EVT-{event.id}</Typography>
         </Box>
 
-        <Box display="flex" gap={1.5}>
+        <Box
+          display="flex"
+          gap={1.5}
+          flexWrap="wrap"
+          sx={{ width: { xs: "100%", sm: "auto" }, justifyContent: { xs: "space-between", sm: "flex-start" } }}
+        >
           <Button
             startIcon={<Share2 size={16} />}
             onClick={() => {
@@ -217,8 +234,12 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 3,
+          gridTemplateColumns: {
+            xs: "repeat(2, minmax(0, 1fr))",
+            sm: "repeat(2, minmax(0, 1fr))",
+            md: "repeat(4, minmax(0, 1fr))",
+          },
+          gap: { xs: 2, sm: 3 },
           mb: 3,
           width: "100%",
         }}
@@ -323,14 +344,20 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
 
       {/* Main Container with Tabs */}
       <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
-        <Tabs value={0} sx={{ px: 3, pt: 1, borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={0}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{ px: 3, pt: 1, borderBottom: 1, borderColor: "divider" }}
+        >
           <Tab label="Overview" />
           <Tab label="Attendees" />
           <Tab label="Analytics" />
         </Tabs>
 
         {/* Overview Tab Content */}
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
           <Grid container spacing={3} alignItems="stretch">
             {/* LEFT: Event Details + Banner */}
             <Grid item xs={12} md={6} sx={{ display: "flex" }}>
@@ -440,7 +467,7 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
                   sx={{
                     width: "100%",
                     borderRadius: 2,
-                    height: 250,
+                    height: { xs: 160, sm: 250 },
                     objectFit: "cover",
                     bgcolor: "#e5e7eb",
                   }}

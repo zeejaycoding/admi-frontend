@@ -464,12 +464,13 @@ const prevStepLabel =
             {/* Email Notification Box */}
             <Box
               sx={{
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 borderRadius: "18px",
                 backgroundColor: "#EFF6FF",
                 border: "1px solid #BEDBFF",
                 display: "flex",
                 alignItems: "flex-start",
+                flexWrap: "wrap",
                 gap: 2,
                 mt: 1,
               }}
@@ -827,14 +828,17 @@ const prevStepLabel =
         </Box>
       </Box>
 
-      <Box sx={{ p: 4 }}>
+      <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
         <Box
           sx={{
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
-            mb: 5,
+            mb: { xs: 4, sm: 5 },
             width: "100%",
+            gap: { xs: 0.5, sm: 1, md: 2 },
+            overflowX: "auto",
+            pb: { xs: 1, sm: 0 },
           }}
         >
           {steps.map((step, index) => {
@@ -849,7 +853,8 @@ const prevStepLabel =
                     flexDirection: "column",
                     alignItems: "center",
                     cursor: index <= activeStep ? "pointer" : "default",
-                    minWidth: "110px",
+                    minWidth: { xs: "70px", sm: "90px", md: "110px" },
+                    flexShrink: 0,
                   }}
                   onClick={() => {
                     if (index <= activeStep) setActiveStep(index);
@@ -857,8 +862,8 @@ const prevStepLabel =
                 >
                   <Box
                     sx={{
-                      width: 56,
-                      height: 56,
+                      width: { xs: 44, sm: 50, md: 56 },
+                      height: { xs: 44, sm: 50, md: 56 },
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
@@ -867,17 +872,21 @@ const prevStepLabel =
                       transition: "all 0.3s ease",
                     }}
                   >
-                    <Icon size={24} color={active ? "#FFFFFF" : "#6A7282"} />
+                    <Icon
+                      size={24}
+                      color={active ? "#FFFFFF" : "#6A7282"}
+                      style={{ width: "50%", height: "50%" }}
+                    />
                   </Box>
 
                   <Typography
                     sx={{
                       mt: 1.5,
-                      fontSize: "13px",
+                      fontSize: { xs: "11px", sm: "13px" },
                       fontWeight: 500,
                       color: active ? "#011A5A" : "#6A7282",
                       textAlign: "center",
-                      maxWidth: "110px",
+                      maxWidth: { xs: "70px", sm: "90px", md: "110px" },
                     }}
                   >
                     {step.label}
@@ -890,8 +899,9 @@ const prevStepLabel =
                       flex: 1,
                       height: "4px",
                       backgroundColor: "#E5E7EB",
-                      mt: "28px",
-                      mx: 1,
+                      mt: { xs: "20px", sm: "24px", md: "28px" },
+                      mx: { xs: 0.5, sm: 1 },
+                      minWidth: "16px",
                     }}
                   />
                 )}
@@ -913,6 +923,7 @@ const prevStepLabel =
     justifyContent: "space-between",
     mt: 4,
     gap: 2,
+    flexWrap: "wrap",
   }}
 >
   {/* Back Button */}

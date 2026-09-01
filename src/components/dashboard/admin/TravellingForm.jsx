@@ -168,10 +168,12 @@ const TravellingForm = () => {
       </Box>
 
       {/* reports DataGrid */}
+      <Box sx={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
       <Paper
         elevation={2}
         sx={{
           width: "100%",
+          minWidth: { xs: 900, md: "100%" },
           overflow: "hidden",
           borderRadius: 2,
           backgroundColor: "white",
@@ -419,6 +421,7 @@ sx={{
 }}
         />
       </Paper>
+      </Box>
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
