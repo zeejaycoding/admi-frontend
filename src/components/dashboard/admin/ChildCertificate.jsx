@@ -227,13 +227,16 @@ const ChildCertificate = () => {
               top: "54.5%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.2rem" },
+              fontSize: { xs: "0.95rem", sm: "1.5rem", md: "2.2rem" },
               fontWeight: 700,
               color: "#1a1a1a",
               fontFamily: "'Times New Roman', serif",
               fontStyle: "italic",
               textAlign: "center",
-              width: "75%",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              width: { xs: "66%", sm: "75%" },
             }}
           >
             {certificate?.childName || "_________________________"}

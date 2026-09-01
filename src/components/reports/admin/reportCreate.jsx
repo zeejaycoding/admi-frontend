@@ -471,6 +471,7 @@ const isProfit = closingBalance >= 0;
               display: "grid",
               gridTemplateColumns: {
                 xs: "1fr",
+                sm: "80px 1fr 1fr 1fr 70px",
                 lg: "80px 1.2fr 1.5fr 1fr 70px",
               },
               gap: 2,
@@ -1516,7 +1517,7 @@ case 3:
         </Box>
       </Box>
 
-      <Box sx={{ p: 4 }}>
+      <Box sx={{ p: { xs: 1.5, sm: 2, md: 4 } }}>
         <Box
           sx={{
             display: "flex",
@@ -1524,6 +1525,7 @@ case 3:
             justifyContent: "space-between",
             mb: 5,
             width: "100%",
+            overflowX: "hidden",
           }}
         >
           {steps.map((step, index) => {
@@ -1538,7 +1540,8 @@ case 3:
                     flexDirection: "column",
                     alignItems: "center",
                     cursor: index <= activeStep ? "pointer" : "default",
-                    minWidth: "110px",
+                    minWidth: { xs: "58px", sm: "90px", md: "110px" },
+                    flexShrink: 0,
                   }}
                   onClick={() => {
                     if (index <= activeStep) setActiveStep(index);
@@ -1546,8 +1549,8 @@ case 3:
                 >
                   <Box
                     sx={{
-                      width: 56,
-                      height: 56,
+                      width: { xs: 44, sm: 56 },
+                      height: { xs: 44, sm: 56 },
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
@@ -1562,11 +1565,12 @@ case 3:
                   <Typography
                     sx={{
                       mt: 1.5,
-                      fontSize: "13px",
+                      fontSize: { xs: "11px", sm: "13px" },
                       fontWeight: 500,
                       color: active ? "#011A5A" : "#6A7282",
                       textAlign: "center",
-                      maxWidth: "110px",
+                      maxWidth: { xs: "58px", sm: "110px" },
+                      lineHeight: 1.3,
                     }}
                   >
                     {step.label}
@@ -1579,8 +1583,9 @@ case 3:
                       flex: 1,
                       height: "4px",
                       backgroundColor: "#E5E7EB",
-                      mt: "28px",
-                      mx: 1,
+                      mt: { xs: "20px", sm: "28px" },
+                      mx: { xs: 0.5, sm: 1 },
+                      width: "100%",
                     }}
                   />
                 )}
@@ -1602,6 +1607,7 @@ case 3:
     justifyContent: "space-between",
     mt: 4,
     gap: 2,
+    flexDirection: { xs: "column", sm: "row" },
   }}
 >
   {/* Back Button */}
@@ -1616,6 +1622,7 @@ case 3:
         borderRadius: "12px",
         textTransform: "none",
         fontWeight: 400,
+        width: { xs: "100%", sm: "auto" },
         "&:hover": {
           backgroundColor: "#011A5A",
         },
@@ -1639,6 +1646,7 @@ case 3:
       borderRadius: "12px",
       textTransform: "none",
       fontWeight: 400,
+      width: { xs: "100%", sm: "auto" },
       "&:hover": {
         backgroundColor: "#011A5A",
       },
@@ -1659,7 +1667,8 @@ case 3:
       borderRadius: "12px",
       textTransform: "none",
       fontWeight: 600,
-      minWidth: "180px",
+      minWidth: { xs: "100%", sm: "180px" },
+      width: { xs: "100%", sm: "auto" },
       "&:hover": {
         backgroundColor:
           uploadedFiles.length > 0 ? "#00A63E" : "#D1D5DB",

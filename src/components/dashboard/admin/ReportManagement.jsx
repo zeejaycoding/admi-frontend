@@ -284,6 +284,7 @@ const ReportManagement = () => {
               borderRadius: "10px",
               fontWeight: 600,
               textTransform: "none",
+              width: { xs: "100%", sm: "auto" },
               "&:hover": {
                 backgroundColor: "#F9FAFB",
               },
@@ -304,6 +305,7 @@ const ReportManagement = () => {
     borderRadius: "10px",
     fontWeight: 600,
     textTransform: "none",
+    width: { xs: "100%", sm: "auto" },
     "&:hover": {
       backgroundColor: "#011A5A",
     },
@@ -519,7 +521,8 @@ const ReportManagement = () => {
             }}
             sx={{
               flex: 1,
-              minWidth: 300,
+              minWidth: { xs: 0, sm: 300 },
+              width: { xs: "100%", sm: "auto" },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
@@ -531,7 +534,7 @@ const ReportManagement = () => {
               display: "flex",
               alignItems: "center",
               gap: 1,
-              width: "auto",
+              width: { xs: "100%", sm: "auto" },
               minWidth: "100px",
               height: "41px",
               px: 1.5,

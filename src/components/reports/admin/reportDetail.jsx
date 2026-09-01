@@ -165,8 +165,11 @@ const ReportDetail = () => {
 <Box
   ref={reportRef}
   sx={{
-    p: 3,
+    p: { xs: 1.5, sm: 2, md: 3 },
     backgroundColor: "#f8fafc",
+    width: "100%",
+    maxWidth: "100%",
+    overflowX: "hidden",
   }}
 >
   
@@ -562,7 +565,7 @@ const ReportDetail = () => {
     display: "grid",
     gridTemplateColumns: {
       xs: "1fr",
-      lg: "60% 30%",
+      lg: "3fr 2fr",
     },
     gap: 3,
     mt: 3,
