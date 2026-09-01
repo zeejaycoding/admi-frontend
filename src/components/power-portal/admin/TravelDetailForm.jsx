@@ -22,12 +22,21 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getTravelFormById, updateTravelFormStatus, clearSelected } from "../../../store/slices/travelFormSlice";
 
+const normalizeRoles = (user) => {
+  const raw = user?.roles || user?.authorities || [];
+  return raw.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
+};
+
 const TravelDetailForm = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const dispatch = useDispatch();
   const { selectedTravelForm } = useSelector((state) => state.travelForm);
+  const currentUser = useSelector((state) => state.auth?.user);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const roles = normalizeRoles(currentUser);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
 
   const travelForm = selectedTravelForm || state?.travelForm;
 
@@ -516,6 +525,7 @@ const TravelDetailForm = () => {
       py: 1.3,
       textTransform: "none",
       fontWeight: 500,
+      display: canManage ? "inline-flex" : "none",
       "&:hover": {
         backgroundColor: travelForm?.status === "Pending" ? "#030213" : "#9CA3AF",
       },
@@ -537,6 +547,7 @@ const TravelDetailForm = () => {
       py: 1.3,
       textTransform: "none",
       fontWeight: 500,
+      display: canManage ? "inline-flex" : "none",
       "&:hover": {
         backgroundColor: travelForm?.status === "Pending" ? "#D4183D" : "#9CA3AF",
       },
@@ -558,6 +569,7 @@ const TravelDetailForm = () => {
       py: 1.3,
       textTransform: "none",
       fontWeight: 500,
+      display: canManage ? "inline-flex" : "none",
       "&:hover": {
         backgroundColor: "#FFFFFF",
         border: "1px solid #0000001A",

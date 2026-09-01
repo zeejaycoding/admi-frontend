@@ -25,6 +25,12 @@ import { useNavigate } from "react-router-dom";
 const TravellingForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const currentUser = useSelector((state) => state.auth?.user);
+  const roles = (currentUser?.roles || currentUser?.authorities || [])
+    .map((r) => (typeof r === "string" ? r : r?.name || r?.role || ""))
+    .filter(Boolean);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filtered, setFiltered] = useState([]);
   const { travelForms, isLoading, error } = useSelector(
@@ -330,24 +336,28 @@ const TravellingForm = () => {
     sortable: false,
     renderCell: (params) => (
       <Box display="flex" gap={1}>
-        <Edit
-          size={16}
-          color="#374151"
-          style={{ cursor: "pointer" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            notify.info("Editing coming soon!");
-          }}
-        />
-        <Trash2
-          size={16}
-          color="#DC2626"
-          style={{ cursor: "pointer" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDeleteForm(params.row);
-          }}
-        />
+        {canManage && (
+          <>
+            <Edit
+              size={16}
+              color="#374151"
+              style={{ cursor: "pointer" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                notify.info("Editing coming soon!");
+              }}
+            />
+            <Trash2
+              size={16}
+              color="#DC2626"
+              style={{ cursor: "pointer" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteForm(params.row);
+              }}
+            />
+          </>
+        )}
       </Box>
     ),
   },

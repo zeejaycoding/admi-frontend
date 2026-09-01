@@ -7,6 +7,7 @@ import {
   HeartHandshake,
   MessagesSquare,
   Globe,
+  Church,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import admiLogo from '../../assets/logo-admi.png';
@@ -31,6 +32,9 @@ const iconMap = {
   marriage: HeartHandshake,
   'coordinator-chat': MessagesSquare,
   'national-leader': Globe,
+  'pbs-registrations': Church,
+  'discipleship-registrations': Church,
+  'other-programmes': Church,
 };
 
 const PERMISSION_TO_ICON = {
@@ -57,16 +61,30 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
   const userRoles = currentUser?.roles || currentUser?.authorities || [];
   const roleList = Array.isArray(userRoles) ? userRoles : [userRoles];
   const isCoordinator = roleList.some((r) => r === 'COORDINATOR' || r?.name === 'COORDINATOR' || r?.role === 'COORDINATOR');
+  const isNationalLeader = roleList.some((r) => r === 'NATIONAL_LEADER' || r?.name === 'NATIONAL_LEADER' || r?.role === 'NATIONAL_LEADER');
 
   const allowedItems = new Set(['overview']);
   Object.entries(PERMISSION_TO_ICON).forEach(([permKey, iconKey]) => {
     if (userPermissions.has(permKey)) allowedItems.add(iconKey);
   });
 
+  const COORDINATOR_ICONS = new Set([
+    'travel',
+    'marriage',
+    'child',
+    'portal',
+    'reports',
+    'coordinator-chat',
+  ]);
+
   const visibleAdminItems = items
     .filter((i) => i.section === 'admin')
     .filter((i) => {
+      if (isCoordinator) {
+        return COORDINATOR_ICONS.has(i.icon);
+      }
       if (i.icon === 'coordinator-chat') return isCoordinator;
+      if (i.icon === 'national-leader') return isNationalLeader;
       return !Object.values(PERMISSION_TO_ICON).includes(i.icon) || allowedItems.has(i.icon);
     });
 

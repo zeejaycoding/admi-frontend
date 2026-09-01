@@ -18,6 +18,7 @@ import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
 import { createDedication } from "../../../store/slices/childDedicationSlice";
 import { fetchAllCampuses } from "../../../store/slices/campusSlice";
+import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
 
 
 const ChildFormCreate = () => {
@@ -26,6 +27,7 @@ const navigate = useNavigate();
 
 const { campuses } = useSelector((state) => state.campus);
 const { isLoading } = useSelector((state) => state.childDedication);
+const { isCoordinator, campusName } = useCoordinatorCampus();
 
 const mockCampuses = [
   { id: 1, name: "Karachi" },
@@ -56,11 +58,12 @@ const [formData, setFormData] = useState({
     }, [dispatch, campuses]);
 
     const handleSubmit = async () => {
+  const effectiveCampus = isCoordinator ? campusName || "" : formData.campus;
   if (
     !formData.dedicationDate ||
     !formData.childName ||
     !formData.parentName ||
-    !formData.campus ||
+    !effectiveCampus ||
     !formData.minister
   ) {
     notify.error("Please fill in all required fields");
@@ -73,7 +76,7 @@ const [formData, setFormData] = useState({
     childName: formData.childName,
     dedicationDate: formData.dedicationDate,
     parentName: formData.parentName,
-    campus: formData.campus,
+    campus: effectiveCampus,
     minister: formData.minister,
   };
 
@@ -325,6 +328,24 @@ const [formData, setFormData] = useState({
     Campus *
   </Typography>
 
+  {isCoordinator ? (
+    <TextField
+      fullWidth
+      value={campusName || ""}
+      disabled
+      variant="outlined"
+      placeholder={campusName ? "" : "No campus assigned yet"}
+      InputProps={{
+        sx: {
+          bgcolor: "#EDEDF0",
+          borderRadius: "8px",
+          "& fieldset": {
+            borderColor: "transparent",
+          },
+        },
+      }}
+    />
+  ) : (
   <FormControl fullWidth>
     <Select
       displayEmpty
@@ -358,6 +379,7 @@ const [formData, setFormData] = useState({
       ))}
     </Select>
   </FormControl>
+  )}
 </Box>
 
 

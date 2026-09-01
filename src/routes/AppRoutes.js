@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import NonCoordinatorRoute from '../components/auth/NonCoordinatorRoute';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import MainLayout from '../components/layout/MainLayout';
 import AdminLayout from '../components/layout/AdminLayout';
@@ -26,6 +27,9 @@ import ChildDetailForm from "../components/power-portal/admin/ChildDetailForm";
 import ChildCertificate from "../components/dashboard/admin/ChildCertificate";
 import MarriageForm from "../components/dashboard/admin/MarriageForm";
 import MarriageFormCreate from "../components/power-portal/admin/MarriageFormCreate";
+import PowerBibleSchoolRegistrations from "../components/dashboard/admin/PowerBibleSchoolRegistrations";
+import DiscipleshipProgramRegistrations from "../components/dashboard/admin/DiscipleshipProgramRegistrations";
+import OtherProgrammeRegistrations from "../components/dashboard/admin/OtherProgrammeRegistrations";
 import ReportCreate from '../components/reports/admin/reportCreate';
 import ReportDetail from '../components/reports/admin/reportDetail';
 import SubmissionsOverview from '../components/dashboard/admin/SubmissionsOverview';
@@ -155,24 +159,136 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<AdminDashboard />} />
-          <Route path="national-leader" element={<NationalLeaderDashboard />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="campuses" element={<CampusManagement />} />
-          <Route path="books" element={<BookManagement />} />
-          <Route path="courses" element={<CourseManagement />} />
-                    <Route path="events" element={<EventManagement />} />
-          <Route path="events/:id" element={<EventDetail />} />
+          <Route
+            index
+            element={
+              <NonCoordinatorRoute>
+                <AdminDashboard />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="national-leader"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <NationalLeaderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <NonCoordinatorRoute>
+                <UserManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="campuses"
+            element={
+              <NonCoordinatorRoute>
+                <CampusManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="books"
+            element={
+              <NonCoordinatorRoute>
+                <BookManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <NonCoordinatorRoute>
+                <CourseManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="events"
+            element={
+              <NonCoordinatorRoute>
+                <EventManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="events/:id"
+            element={
+              <NonCoordinatorRoute>
+                <EventDetail />
+              </NonCoordinatorRoute>
+            }
+          />
 
-          <Route path="orders" element={<OrderManagement />} />
-          <Route path="payments" element={<PaymentManagement />} />
-          <Route path="forms" element={<FormManagement />} />
-          <Route path="forms/builder" element={<FormBuilder />} />
-          <Route path="forms/builder/:formId" element={<FormBuilder />} />
-          <Route path="forms/:formId/submissions" element={<FormSubmissions />} />
-          <Route path="forms/:formId/payments" element={<FormPayments />} />
-          <Route path="submissions" element={<SubmissionsOverview />} />
-                    <Route path="powerportal" element={<PowerPortalManagement />} />
+          <Route
+            path="orders"
+            element={
+              <NonCoordinatorRoute>
+                <OrderManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="payments"
+            element={
+              <NonCoordinatorRoute>
+                <PaymentManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="forms"
+            element={
+              <NonCoordinatorRoute>
+                <FormManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="forms/builder"
+            element={
+              <NonCoordinatorRoute>
+                <FormBuilder />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="forms/builder/:formId"
+            element={
+              <NonCoordinatorRoute>
+                <FormBuilder />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="forms/:formId/submissions"
+            element={
+              <NonCoordinatorRoute>
+                <FormSubmissions />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="forms/:formId/payments"
+            element={
+              <NonCoordinatorRoute>
+                <FormPayments />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="submissions"
+            element={
+              <NonCoordinatorRoute>
+                <SubmissionsOverview />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route path="powerportal" element={<PowerPortalManagement />} />
            <Route path="travel" element={<TravellingForm />} />
           <Route path="power-portal/travelling/createForm"element={<TravellingFormCreate />}/>
           <Route path="travel/:id" element={<TravelDetailForm />} />
@@ -182,10 +298,41 @@ const AppRoutes = () => {
           <Route path="child/certificate" element={<ChildCertificate />} />
            <Route path="marriage" element={<MarriageForm />} />
             <Route path="power-portal/marriage/createForm"element={<MarriageFormCreate />}/>
+           <Route
+             path="power-bible-school"
+             element={
+               <NonCoordinatorRoute>
+                 <PowerBibleSchoolRegistrations />
+               </NonCoordinatorRoute>
+             }
+           />
+           <Route
+             path="discipleship-program"
+             element={
+               <NonCoordinatorRoute>
+                 <DiscipleshipProgramRegistrations />
+               </NonCoordinatorRoute>
+             }
+           />
+           <Route
+             path="other-programmes"
+             element={
+               <NonCoordinatorRoute>
+                 <OtherProgrammeRegistrations />
+               </NonCoordinatorRoute>
+             }
+           />
           <Route path="reports" element={<ReportManagement />} />
           <Route path="reports/create" element={<ReportCreate />} />
           <Route path="reports/:id" element={<ReportDetail />} />
-           <Route path="menu-management" element={<RolesPermissions />} />
+           <Route
+             path="menu-management"
+             element={
+               <NonCoordinatorRoute>
+                 <RolesPermissions />
+               </NonCoordinatorRoute>
+             }
+           />
             <Route
               path="coordinator-chat"
               element={

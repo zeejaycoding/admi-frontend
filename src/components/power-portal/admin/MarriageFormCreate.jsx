@@ -26,6 +26,7 @@ import {
 import campusService from "../../../services/api/campusService";
 import { createCertificate } from "../../../store/slices/marriageCertificateSlice";
 import { notify, formatBackendErrorMessage } from "../../../services/utils/authUtils";
+import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
 
 const DEMO_CAMPUSES = [
   "Sanctuary Campus",
@@ -70,6 +71,8 @@ const MarriageFormCreate = () => {
   const [certificateNumber, setCertificateNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [campuses, setCampuses] = useState([]);
+  const { isCoordinator, campusName } = useCoordinatorCampus();
+  const effectiveCampus = isCoordinator ? campusName || "" : campus;
 
   useEffect(() => {
     const loadCampuses = async () => {
@@ -94,7 +97,7 @@ const MarriageFormCreate = () => {
       !partner2Name.trim() ||
       !partner2Email.trim() ||
       !dateOfMarriage ||
-      !campus ||
+      !effectiveCampus ||
       !officiatingMinister.trim()
     ) {
       notify.error("Please fill in all required fields before sending.");
@@ -107,7 +110,7 @@ const MarriageFormCreate = () => {
       brideName: partner2Name.trim(),
       brideEmail: partner2Email.trim(),
       marriageDate: dateOfMarriage,
-      campus,
+      campus: effectiveCampus,
       minister: officiatingMinister.trim(),
       maidOfHonor: maidOfHonor.trim(),
       bestMan: bestMan.trim(),
@@ -396,6 +399,15 @@ const prevStepLabel =
                 }}
               />
 
+              {isCoordinator ? (
+                <TextField
+                  fullWidth
+                  label="Campus"
+                  value={effectiveCampus}
+                  disabled
+                  variant="outlined"
+                />
+              ) : (
               <FormControl fullWidth>
                 <InputLabel>Campus *</InputLabel>
                 <Select
@@ -414,6 +426,7 @@ const prevStepLabel =
                   ))}
                 </Select>
               </FormControl>
+              )}
 
               <TextField
                 fullWidth

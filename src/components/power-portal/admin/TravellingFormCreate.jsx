@@ -13,17 +13,20 @@ import { Button } from "../../ui";
 import { createTravelForm, clearSuccess } from "../../../store/slices/travelFormSlice";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
+import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
 
 const TravellingFormCreate = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { isLoading, success } = useSelector((state) => state.travelForm);
+    const { isCoordinator, campusName } = useCoordinatorCampus();
     const [formData, setFormData] = useState({
       country: "",
       travelDate: "",
       days: "",
       reason: "",
       returnDate: "",
+      campus: "",
     });
 
     const handleChange = (field) => (e) => {
@@ -41,6 +44,7 @@ const TravellingFormCreate = () => {
         days: parseInt(formData.days, 10),
         reason: formData.reason,
         returnDate: formData.returnDate,
+        campus: isCoordinator ? campusName || "" : formData.campus,
       };
       const result = await dispatch(createTravelForm(payload));
       if (result.meta.requestStatus === "fulfilled") {
@@ -176,6 +180,51 @@ const TravellingFormCreate = () => {
         InputProps={{
           sx: {
             bgcolor: "#F3F3F5",
+            borderRadius: "8px",
+            "& fieldset": {
+              borderColor: "transparent",
+            },
+            "&:hover fieldset": {
+              borderColor: "transparent",
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: "transparent",
+            },
+            "& input::placeholder": {
+              color: "#717182",
+              opacity: 1,
+              fontSize: "14px",
+              fontWeight: 400,
+            },
+          },
+        }}
+      />
+    </Box>
+
+    {/* Campus */}
+    <Box>
+      <Typography
+        sx={{
+          color: "#0A0A0A",
+          fontSize: "14px",
+          fontWeight: 500,
+          mb: 1,
+        }}
+      >
+        Campus {isCoordinator ? "" : "*"}
+      </Typography>
+
+      <TextField
+        fullWidth
+        placeholder={isCoordinator ? (campusName || "No campus assigned yet") : "Enter Campus"}
+        variant="outlined"
+        value={isCoordinator ? campusName || "" : formData.campus}
+        onChange={handleChange("campus")}
+        disabled={isCoordinator}
+        InputProps={{
+          readOnly: isCoordinator,
+          sx: {
+            bgcolor: isCoordinator ? "#EDEDF0" : "#F3F3F5",
             borderRadius: "8px",
             "& fieldset": {
               borderColor: "transparent",

@@ -9,6 +9,7 @@ import useAuth from '../../hooks/useAuth';
 import { useCart } from '../../context/CartContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { ACCESS_TOKEN_KEY, USER_KEY } from '../../services/utils/constants';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,8 +29,8 @@ const Header = () => {
 
   const [optimisticAuth, setOptimisticAuth] = useState(() => {
     try {
-      const savedUser = localStorage.getItem('user');
-      const savedTokens = localStorage.getItem('accessToken');
+      const savedUser = localStorage.getItem(USER_KEY);
+      const savedTokens = localStorage.getItem(ACCESS_TOKEN_KEY);
       return {
         isAuthenticated: !!(savedUser && savedTokens),
         user: savedUser ? JSON.parse(savedUser) : null
@@ -148,7 +149,9 @@ const Header = () => {
   const displayUser = displayAuth.user;
 
   const isAdmin = Array.isArray(displayUser?.roles) && (
-    displayUser.roles.includes('SUPER_ADMIN') || displayUser.roles.includes('ADMIN')
+    displayUser.roles.includes('SUPER_ADMIN') ||
+    displayUser.roles.includes('ADMIN') ||
+    displayUser.roles.includes('COORDINATOR')
   );
   const initials = displayUser
     ? (displayUser.fullName || '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()

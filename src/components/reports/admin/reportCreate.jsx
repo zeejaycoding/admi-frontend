@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createReport } from "../../../store/slices/reportSlice";
 import { notify } from "../../../services/utils/authUtils";
+import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
 import {
   Box,
   Paper,
@@ -49,6 +50,8 @@ const AddReport = () => {
   const [zonalLeader, setZonalLeader] = useState("");
   const [summary, setSummary] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { isCoordinator, campusName } = useCoordinatorCampus();
+  const effectiveCampus = isCoordinator ? campusName || "" : campus;
 
   useEffect(() => {
     if (activeStep > 0) {
@@ -74,7 +77,7 @@ const AddReport = () => {
         date: reportDate,
         country,
         nationalLeader,
-        campus,
+        campus: effectiveCampus,
         coordinator,
         zonalLeader,
         summary,
@@ -341,8 +344,9 @@ const isProfit = closingBalance >= 0;
                   fullWidth
                   label="Campus Name *"
                   placeholder="Enter campus name"
-                  value={campus}
+                  value={effectiveCampus}
                   onChange={(e) => setCampus(e.target.value)}
+                  disabled={isCoordinator}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">

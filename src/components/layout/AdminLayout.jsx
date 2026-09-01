@@ -14,6 +14,9 @@ const adminItems = [
    { to: '/admin/travel', label: 'Travelling Forms', icon: 'travel', section: 'admin' },
     { to: '/admin/marriage', label: 'Marriage Forms', icon: 'marriage', section: 'admin' },
      { to: '/admin/child', label: 'Child Forms', icon: 'child', section: 'admin' },
+  { to: '/admin/power-bible-school', label: 'Power Bible School Registrations', icon: 'pbs-registrations', section: 'admin' },
+  { to: '/admin/discipleship-program', label: 'Discipleship Program Registrations', icon: 'discipleship-registrations', section: 'admin' },
+  { to: '/admin/other-programmes', label: 'Other Programme Registrations', icon: 'other-programmes', section: 'admin' },
 
   { to: '/admin/orders', label: 'Orders', icon: 'orders', section: 'admin' },
   { to: '/admin/payments', label: 'Payments', icon: 'payments', section: 'admin' },
