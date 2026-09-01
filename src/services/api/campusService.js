@@ -8,6 +8,7 @@ const CAMPUS_ENDPOINTS = {
   GET_REGIONS: '/campuses/regions',
   GET_CURRENCIES: '/campuses/currencies',
   GET_CURRENCY_FOR_REGION: '/campuses/currency',
+  GET_STATS: '/campuses/stats',
   PUBLIC_SEARCH: '/campuses/public/search',
   PUBLIC_BY_REGION: '/campuses/public/region',
   PUBLIC_FEATURED: '/campuses/public/featured',
@@ -80,6 +81,11 @@ export const campusService = {
   },
 
   // Admin methods
+  getCampusStats: async () => {
+    const response = await apiClient.get(CAMPUS_ENDPOINTS.GET_STATS);
+    return response.data;
+  },
+
   createCampus: async (campusData) => {
     const response = await apiClient.post(CAMPUS_ENDPOINTS.CREATE, campusData);
     return response.data;

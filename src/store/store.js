@@ -15,6 +15,7 @@ import travelFormReducer from './slices/travelFormSlice';
 import childDedicationReducer from './slices/childDedicationSlice';
 import marriageCertificateReducer from './slices/marriageCertificateSlice';
 import reportReducer from './slices/reportSlice';
+import menuPermissionsReducer from './slices/menuPermissionsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -34,6 +35,7 @@ export const store = configureStore({
     childDedication: childDedicationReducer,
     marriageCertificate: marriageCertificateReducer,
     report: reportReducer,
+    menuPermissions: menuPermissionsReducer,
   },
   middleware: (getDefault) => getDefault({ serializableCheck: false }),
   // SECURITY: Disable Redux DevTools in production to prevent state inspection
