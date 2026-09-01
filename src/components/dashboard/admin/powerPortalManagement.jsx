@@ -11,6 +11,7 @@ import {
   InputAdornment,
   Paper,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import {
    FileText,
@@ -207,8 +208,25 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
       </Box>
 
 
-      {/* Statistics Cards */}
-     <Box
+      {/* Loading state */}
+      {isLoading && !stats ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            py: 8,
+            gap: 2,
+          }}
+        >
+          <CircularProgress sx={{ color: "#011A5A" }} />
+          <Typography sx={{ color: "#6B7280", fontSize: "14px" }}>
+            Loading dashboard statistics...
+          </Typography>
+        </Box>
+      ) : (
+      <Box
   sx={{
     display: "grid",
     gridTemplateColumns: {
@@ -308,6 +326,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
     );
   })}
 </Box>
+)}
 
 <Box
   sx={{

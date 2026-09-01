@@ -1,4 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { persistStore, persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import authReducer, { registerApiClientAuthHandlers } from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import campusReducer from './slices/campusSlice';
@@ -17,6 +19,29 @@ import marriageCertificateReducer from './slices/marriageCertificateSlice';
 import reportReducer from './slices/reportSlice';
 import menuPermissionsReducer from './slices/menuPermissionsSlice';
 
+const persistConfig = (key, whitelist) => ({
+  key,
+  storage,
+  whitelist,
+});
+
+const childDedicationPersist = persistReducer(
+  persistConfig('childDedication', ['dedications', 'selectedDedication']),
+  childDedicationReducer,
+);
+const marriageCertificatePersist = persistReducer(
+  persistConfig('marriageCertificate', ['certificates', 'selectedCertificate']),
+  marriageCertificateReducer,
+);
+const travelFormPersist = persistReducer(
+  persistConfig('travelForm', ['travelForms', 'selectedTravelForm', 'stats']),
+  travelFormReducer,
+);
+const formSubmissionPersist = persistReducer(
+  persistConfig('formSubmission', ['submissions']),
+  formSubmissionReducer,
+);
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -29,11 +54,11 @@ export const store = configureStore({
     payment: paymentReducer,
     dashboard: dashboardReducer,
     form: formReducer,
-    formSubmission: formSubmissionReducer,
+    formSubmission: formSubmissionPersist,
     event: eventReducer,
-    travelForm: travelFormReducer,
-    childDedication: childDedicationReducer,
-    marriageCertificate: marriageCertificateReducer,
+    travelForm: travelFormPersist,
+    childDedication: childDedicationPersist,
+    marriageCertificate: marriageCertificatePersist,
     report: reportReducer,
     menuPermissions: menuPermissionsReducer,
   },
@@ -41,6 +66,8 @@ export const store = configureStore({
   // SECURITY: Disable Redux DevTools in production to prevent state inspection
   devTools: process.env.NODE_ENV !== 'production',
 });
+
+export const persistor = persistStore(store);
 
 // Wire axios refresh handlers to Redux store
 registerApiClientAuthHandlers(store);
