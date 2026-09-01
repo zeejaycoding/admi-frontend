@@ -61,6 +61,13 @@ const reportService = {
     return response.data;
   },
 
+  updateReport: async (id, reportData) => {
+    const response = await apiClient.put(`${REPORT_ENDPOINTS.GET_BY_ID}/${id}`, null, {
+      params: reportData,
+    });
+    return response.data;
+  },
+
   deleteReport: async (id) => {
     const response = await apiClient.delete(`${REPORT_ENDPOINTS.DELETE}/${id}`);
     return response.data;

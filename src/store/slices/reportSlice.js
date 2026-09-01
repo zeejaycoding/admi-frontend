@@ -49,6 +49,18 @@ export const updateReportStatus = createAsyncThunk(
   }
 );
 
+export const updateReport = createAsyncThunk(
+  'report/updateReport',
+  async ({ id, reportData }, { rejectWithValue }) => {
+    try {
+      const response = await reportService.updateReport(id, reportData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to update report' });
+    }
+  }
+);
+
 export const deleteReport = createAsyncThunk(
   'report/deleteReport',
   async (id, { rejectWithValue }) => {
@@ -153,6 +165,24 @@ const reportSlice = createSlice({
         }
       })
       .addCase(updateReportStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Update report (name + info section)
+      .addCase(updateReport.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateReport.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const updated = action.payload;
+        state.reports = state.reports.map((r) => (r.id === updated.id ? updated : r));
+        if (state.selectedReport && state.selectedReport.id === updated.id) {
+          state.selectedReport = updated;
+        }
+        state.success = true;
+      })
+      .addCase(updateReport.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })

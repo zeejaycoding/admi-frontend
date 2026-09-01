@@ -41,7 +41,7 @@ import {
   getReportAnalytics,
 } from "../../../store/slices/reportSlice";
 import { notify } from "../../../services/utils/authUtils";
-//import EventCreate from "../../events/admin/EventCreate";
+import EditReport from "../../reports/admin/reportEdit";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -57,6 +57,8 @@ const ReportManagement = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [reportToEdit, setReportToEdit] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -187,7 +189,20 @@ const ReportManagement = () => {
   };
 
   const handleEditEvent = (event) => {
-    notify.info("Report editing coming soon!");
+    setReportToEdit(event);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setEditModalOpen(false);
+    setReportToEdit(null);
+    dispatch(fetchAllReports());
+    dispatch(getReportAnalytics());
+  };
+
+  const handleCancelEdit = () => {
+    setEditModalOpen(false);
+    setReportToEdit(null);
   };
 
   const handleRowClick = (params) => {
@@ -903,6 +918,19 @@ const ReportManagement = () => {
             <EventCreate
               onSuccess={handleCreateSuccess}
               onCancel={() => setCreateModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Report Modal */}
+      {editModalOpen && reportToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <EditReport
+              report={reportToEdit}
+              onSuccess={handleEditSuccess}
+              onCancel={handleCancelEdit}
             />
           </div>
         </div>
