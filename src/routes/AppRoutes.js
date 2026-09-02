@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import NonCoordinatorRoute from '../components/auth/NonCoordinatorRoute';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -78,6 +79,8 @@ const DiscipleshipHonorOfferingPage = lazy(() => import('../pages/DiscipleshipHo
 
 const AppRoutes = () => {
   const { selectedRegion } = useRegion();
+  const { user } = useSelector((state) => state.auth);
+  const isNL = Array.isArray(user?.roles) && user.roles.includes('NATIONAL_LEADER');
 
   // Memoized home component based on current region from context
   const HomeComponent = useMemo(() => {
@@ -156,7 +159,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'COORDINATOR']}>
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'COORDINATOR', 'NATIONAL_LEADER']}>
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -164,9 +167,13 @@ const AppRoutes = () => {
           <Route
             index
             element={
-              <NonCoordinatorRoute>
-                <AdminDashboard />
-              </NonCoordinatorRoute>
+              isNL
+                ? <Navigate to="/admin/national-leader" replace />
+                : (
+                  <NonCoordinatorRoute>
+                    <AdminDashboard />
+                  </NonCoordinatorRoute>
+                )
             }
           />
           <Route

@@ -79,11 +79,29 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
     'coordinator-chat',
   ]);
 
+  const NATIONAL_LEADER_ICONS = new Set([
+    'national-leader',
+    'campuses',
+    'campus-management',
+    'events',
+    'discipleship-registrations',
+    'pbs-registrations',
+    'other-programmes',
+    'portal',
+    'travel',
+    'child',
+    'marriage',
+    'reports',
+  ]);
+
   const visibleAdminItems = items
     .filter((i) => i.section === 'admin')
     .filter((i) => {
       if (isCoordinator) {
         return COORDINATOR_ICONS.has(i.icon);
+      }
+      if (isNationalLeader) {
+        return NATIONAL_LEADER_ICONS.has(i.icon);
       }
       if (i.icon === 'coordinator-chat') return isCoordinator;
       if (i.icon === 'national-leader') return isNationalLeader;
@@ -115,7 +133,9 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
           />
           {showLabel && (
             <div className="min-w-0">
-              <p className="text-white/50 text-[10px] uppercase tracking-widest mt-0.5">Admin Portal</p>
+              <p className="text-white/50 text-[10px] uppercase tracking-widest mt-0.5">
+                {isNationalLeader ? 'National Leader Panel' : isCoordinator ? 'Coordinator Panel' : 'Admin Portal'}
+              </p>
             </div>
           )}
         </div>
@@ -145,7 +165,9 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
 
       <div className="flex-1 overflow-y-auto px-2 py-3">
         {showLabel && (
-          <p className="text-white/40 text-[10px] uppercase tracking-widest px-2 mb-2">Admin</p>
+          <p className="text-white/40 text-[10px] uppercase tracking-widest px-2 mb-2">
+            {isNationalLeader ? 'National Leader' : isCoordinator ? 'Coordinator' : 'Admin'}
+          </p>
         )}
         <nav className="space-y-0.5">
           {visibleAdminItems.map((it) => {

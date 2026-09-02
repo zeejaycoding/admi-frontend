@@ -10,10 +10,12 @@ const usePermissions = () => {
 
   const isSuperAdmin = userRoles.has('SUPER_ADMIN');
   const isAdmin = isSuperAdmin || userRoles.has('ADMIN');
+  const isNationalLeader = userRoles.has('NATIONAL_LEADER');
+  const isCoordinator = userRoles.has('COORDINATOR');
   const hasPermission = (permKey) => permissions.has(permKey);
-  const canManage = isAdmin;
+  const canManage = isAdmin || isNationalLeader;
 
-  return { isSuperAdmin, isAdmin, hasPermission, canManage, permissions, userRoles };
+  return { isSuperAdmin, isAdmin, isNationalLeader, isCoordinator, hasPermission, canManage, permissions, userRoles };
 };
 
 export default usePermissions;

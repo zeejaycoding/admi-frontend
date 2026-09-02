@@ -151,8 +151,16 @@ const Header = () => {
   const isAdmin = Array.isArray(displayUser?.roles) && (
     displayUser.roles.includes('SUPER_ADMIN') ||
     displayUser.roles.includes('ADMIN') ||
-    displayUser.roles.includes('COORDINATOR')
+    displayUser.roles.includes('COORDINATOR') ||
+    displayUser.roles.includes('NATIONAL_LEADER')
   );
+  const panelLabel = Array.isArray(displayUser?.roles)
+    ? (displayUser.roles.includes('NATIONAL_LEADER')
+        ? 'National Leader Panel'
+        : displayUser.roles.includes('COORDINATOR')
+          ? 'Coordinator Panel'
+          : 'Admin Panel')
+    : 'Admin Panel';
   const initials = displayUser
     ? (displayUser.fullName || '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
     : '';
@@ -318,7 +326,7 @@ const Header = () => {
                             className="w-full text-left px-4 py-2 hover:bg-gray-100"
                             onClick={() => { navigate('/admin'); setIsUserMenuOpen(false); }}
                           >
-                            {t('nav.adminPanel')}
+                            {panelLabel}
                           </button>
                         </li>
                       )}
@@ -469,7 +477,7 @@ const Header = () => {
                     }`}
                     onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}
                   >
-                    {t('nav.adminPanel')}
+                    {panelLabel}
                   </button>
                 )}
 
