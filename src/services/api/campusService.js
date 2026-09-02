@@ -50,6 +50,11 @@ export const campusService = {
     return response.data;
   },
 
+  getCampusAnalytics: async (id) => {
+    const response = await apiClient.get(`${CAMPUS_ENDPOINTS.GET_BY_ID}/${id}/analytics`);
+    return response.data;
+  },
+
   getSupportedRegions: async () => {
     const response = await apiClient.get(CAMPUS_ENDPOINTS.GET_REGIONS);
     return response.data;

@@ -63,6 +63,11 @@ const coordinatorChatService = {
     const response = await apiClient.get(`${CHAT_BASE}/calls`);
     return response.data;
   },
+
+  getCallsForConversation: async (conversationId) => {
+    const response = await apiClient.get(`${CHAT_BASE}/conversations/${conversationId}/calls`);
+    return response.data;
+  },
 };
 
 class CoordinatorChatSocket {

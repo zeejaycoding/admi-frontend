@@ -29,6 +29,7 @@ import {
   Paperclip,
   Smile,
   Phone,
+  PhoneMissed,
   MoreVertical,
   Plus,
   X,
@@ -83,6 +84,8 @@ const CoordinatorChat = () => {
   const [call, setCall] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
   const [callPhase, setCallPhase] = useState("idle"); // idle | ringing | connecting | ongoing
+  const [allCalls, setAllCalls] = useState([]);
+  const [conversationCalls, setConversationCalls] = useState({});
 
   const messagesEndRef = useRef(null);
   const draftChanged = useRef(false);
@@ -90,8 +93,31 @@ const CoordinatorChat = () => {
   const localStreamRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
   const remoteAudioRef = useRef(null);
+  const ringTimerRef = useRef(null);
+  const ringMetaRef = useRef(null); // { callId, conversationId } while ringing
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId) || null, [chats, activeChatId]);
+
+  const clearRingTimer = () => {
+    if (ringTimerRef.current) {
+      clearTimeout(ringTimerRef.current);
+      ringTimerRef.current = null;
+    }
+    ringMetaRef.current = null;
+  };
+
+  const upsertCall = (callData) => {
+    setAllCalls((prev) => {
+      const exists = prev.some((c) => c.id === callData.id);
+      return exists ? prev.map((c) => (c.id === callData.id ? callData : c)) : [callData, ...prev];
+    });
+    setConversationCalls((prev) => {
+      const list = prev[callData.conversationId] || [];
+      const exists = list.some((c) => c.id === callData.id);
+      const next = exists ? list.map((c) => (c.id === callData.id ? callData : c)) : [...list, callData];
+      return { ...prev, [callData.conversationId]: next };
+    });
+  };
 
   // Load stats + conversations + connect websocket
   useEffect(() => {
@@ -100,13 +126,15 @@ const CoordinatorChat = () => {
 
     const loadData = async () => {
       try {
-        const [statsRes, convRes] = await Promise.all([
+        const [statsRes, convRes, callsRes] = await Promise.all([
           coordinatorChatService.getStats(),
           coordinatorChatService.getConversations(),
+          coordinatorChatService.getCalls(),
         ]);
         if (!alive) return;
         setStats(statsRes?.data || { activeChats: 0, unreadMessages: 0, onlineNow: 0 });
         setChats(convRes?.data || []);
+        setAllCalls(callsRes?.data || []);
         setLoading(false);
         // Auto-open first conversation if none selected and none open
         setActiveChatId((prev) => prev || (convRes?.data?.[0]?.id || null));
@@ -122,6 +150,11 @@ const CoordinatorChat = () => {
 
     return () => {
       alive = false;
+      // If a call is still ringing on unmount, record it as missed while the socket is still open
+      const meta = ringMetaRef.current;
+      if (meta && coordinatorChatSocket.socket?.readyState === WebSocket.OPEN) {
+        coordinatorChatSocket.call("missed", { conversationId: meta.conversationId, callId: meta.callId });
+      }
       coordinatorChatSocket.close();
     };
   }, [accessToken]);
@@ -169,13 +202,25 @@ const CoordinatorChat = () => {
     const onCall = (data) => {
       const callData = data?.call;
       if (!callData) return;
+      upsertCall(callData);
       setCall(callData);
       if (data.action === "offer" && callData.recipientId === currentUserId) {
         setIncomingCall(callData);
         setCallPhase("idle");
+        clearRingTimer();
+        ringMetaRef.current = { callId: callData.id, conversationId: callData.conversationId };
+        ringTimerRef.current = setTimeout(() => {
+          const meta = ringMetaRef.current;
+          if (meta) {
+            coordinatorChatSocket.call("missed", { conversationId: meta.conversationId, callId: meta.callId });
+          }
+          setIncomingCall(null);
+          resetCall();
+        }, 30000);
       }
       if (data.action !== "offer") setIncomingCall(null);
-      if (data.action === "reject" || data.action === "cancel" || data.action === "end") {
+      if (data.action === "accept") clearRingTimer();
+      if (data.action === "reject" || data.action === "cancel" || data.action === "end" || data.action === "missed") {
         resetCall();
       }
       if (data.action === "accept") setCallPhase((p) => (p === "idle" ? "connecting" : p));
@@ -184,9 +229,22 @@ const CoordinatorChat = () => {
 
     const onCallAck = (data) => {
       if (data?.call) {
+        upsertCall(data.call);
         setCall(data.call);
-        if (data.action === "offer") setCallPhase("ringing");
-        if (data.action === "cancel" || data.action === "end" || data.action === "reject") {
+        if (data.action === "offer") {
+          setCallPhase("ringing");
+          clearRingTimer();
+          ringMetaRef.current = { callId: data.call.id, conversationId: data.call.conversationId };
+          ringTimerRef.current = setTimeout(() => {
+            const meta = ringMetaRef.current;
+            if (meta) {
+              coordinatorChatSocket.call("missed", { conversationId: meta.conversationId, callId: meta.callId });
+            }
+            resetCall();
+          }, 30000);
+        }
+        if (data.action === "accept") clearRingTimer();
+        if (data.action === "cancel" || data.action === "end" || data.action === "reject" || data.action === "missed") {
           setIncomingCall(null);
           resetCall();
         }
@@ -253,6 +311,14 @@ const CoordinatorChat = () => {
       .getMessages(activeChatId)
       .then((res) => {
         if (alive) setMessages(res?.data || []);
+      })
+      .catch(() => {});
+    coordinatorChatService
+      .getCallsForConversation(activeChatId)
+      .then((res) => {
+        if (alive) {
+          setConversationCalls((prev) => ({ ...prev, [activeChatId]: res?.data || [] }));
+        }
       })
       .catch(() => {});
     coordinatorChatService.markAsRead(activeChatId).catch(() => {});
@@ -390,6 +456,7 @@ const CoordinatorChat = () => {
   };
 
   const resetCall = () => {
+    clearRingTimer();
     setCall(null);
     setIncomingCall(null);
     setCallPhase("idle");
@@ -424,6 +491,7 @@ const CoordinatorChat = () => {
 
   const handleIncomingCall = (accept) => {
     if (!incomingCall || !activeChatId) return;
+    clearRingTimer();
     coordinatorChatSocket.call(accept ? "accept" : "reject", {
       conversationId: activeChatId,
       callId: incomingCall.id,
@@ -455,6 +523,27 @@ const CoordinatorChat = () => {
       })
       .sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
   }, [chats, country, search]);
+
+  const latestMissedByConvo = useMemo(() => {
+    const map = {};
+    for (const c of allCalls) {
+      if (c.status !== "MISSED") continue;
+      const prev = map[c.conversationId];
+      if (!prev || new Date(c.createdAt) > new Date(prev.createdAt)) map[c.conversationId] = c;
+    }
+    return map;
+  }, [allCalls]);
+
+  const timeline = useMemo(() => {
+    if (!activeChatId) return [];
+    const items = [
+      ...messages.map((m) => ({ kind: "message", item: m, ts: new Date(m.createdAt || 0) })),
+      ...(conversationCalls[activeChatId] || [])
+        .filter((c) => c.status === "MISSED")
+        .map((c) => ({ kind: "missed", item: c, ts: new Date(c.createdAt || 0) })),
+    ];
+    return items.sort((a, b) => a.ts - b.ts || 0);
+  }, [messages, conversationCalls, activeChatId]);
 
   const selectedCountry = countryOptions.find((c) => c.code === country) || countryOptions[0];
 
@@ -649,20 +738,41 @@ const CoordinatorChat = () => {
                         }}
                       />
                     </Box>
-                    <Typography
-                      sx={{
-                        fontFamily: "Inter, sans-serif",
-                        fontWeight: chat.unreadCount > 0 ? 600 : 400,
-                        fontSize: "12px",
-                        color: chat.unreadCount > 0 ? "#011A5A" : "#98A2B3",
-                        mt: 0.3,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {chat.lastMessage || (chat.otherUser?.region ? `${chat.otherUser.region} coordinator` : "Start a conversation")}
-                    </Typography>
+                    {latestMissedByConvo[chat.id] ? (
+                      <Typography
+                        sx={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 600,
+                          fontSize: "12px",
+                          color: "#C41515",
+                          mt: 0.3,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <PhoneMissed size={13} />
+                        Missed audio call
+                      </Typography>
+                    ) : (
+                      <Typography
+                        sx={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: chat.unreadCount > 0 ? 600 : 400,
+                          fontSize: "12px",
+                          color: chat.unreadCount > 0 ? "#011A5A" : "#98A2B3",
+                          mt: 0.3,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {chat.lastMessage || (chat.otherUser?.region ? `${chat.otherUser.region} coordinator` : "Start a conversation")}
+                      </Typography>
+                    )}
                   </Box>
 
                   <Box display="flex" flexDirection="column" alignItems="flex-end" gap={0.6} flexShrink={0}>
@@ -785,18 +895,18 @@ const CoordinatorChat = () => {
                 {/* Actions */}
                 <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
                   <IconButton
-                    onClick={() =>
-                      call?.conversationId === activeChat.id && (callPhase === "ringing" || callPhase === "connecting" || callPhase === "ongoing")
-                        ? handleCall("end")
-                        : handleCall("offer")
-                    }
+                    onClick={() => {
+                      const inCall = call?.conversationId === activeChat.id && (callPhase === "ringing" || callPhase === "connecting" || callPhase === "ongoing");
+                      if (inCall) handleCall(callPhase === "ringing" ? "cancel" : "end");
+                      else handleCall("offer");
+                    }}
                     sx={{
                       color: callPhase === "ongoing" || callPhase === "connecting" || callPhase === "ringing" ? "#EF4444" : "#011A5A",
                       p: 0.5,
                       bgcolor: callPhase === "ongoing" ? "#FFEEEE" : "transparent",
                       "&:hover": { bgcolor: "#FFFFFF99" },
                     }}
-                    title={callPhase === "ongoing" || callPhase === "connecting" || callPhase === "ringing" ? "End audio call" : "Start audio call"}
+                    title={callPhase === "ongoing" || callPhase === "connecting" || callPhase === "ringing" ? "Hang up audio call" : "Start audio call"}
                   >
                     <Phone size={18} />
                   </IconButton>
@@ -832,7 +942,39 @@ const CoordinatorChat = () => {
 
               {/* Messages */}
               <Box ref={messagesEndRef} sx={{ flex: 1, p: 3, display: "flex", flexDirection: "column", gap: 1.5, overflowY: "auto", bgcolor: "#FAFBFC", maxHeight: "440px" }}>
-                {messages.map((msg) => {
+                {timeline.map((entry) => {
+                  if (entry.kind === "missed") {
+                    const c = entry.item;
+                    const mine = c.initiatorId === currentUserId;
+                    const label = mine ? "You called · no answer" : `Missed call from ${activeChat.otherUser?.fullName || "coordinator"}`;
+                    return (
+                      <Box key={`missed-${c.id}`} sx={{ alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 0.4 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            bgcolor: "#FDECEC",
+                            border: "1px solid #F5CCC6",
+                            color: "#C41515",
+                            px: 2,
+                            py: 0.8,
+                            borderRadius: "18px",
+                            fontSize: "12px",
+                            fontFamily: "Inter, sans-serif",
+                            fontWeight: 600,
+                          }}
+                        >
+                          <PhoneMissed size={14} />
+                          {label}
+                        </Box>
+                        <Typography sx={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: "11px", color: "#99A1AF" }}>
+                          {formatTime(c.createdAt)}
+                        </Typography>
+                      </Box>
+                    );
+                  }
+                  const msg = entry.item;
                   const mine = msg.senderId === currentUserId;
                   return (
                     <Box key={msg.id} sx={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
@@ -857,7 +999,7 @@ const CoordinatorChat = () => {
                     </Box>
                   );
                 })}
-                {messages.length === 0 && (
+                {timeline.length === 0 && (
                   <Typography sx={{ textAlign: "center", color: "#98A2B3", mt: 4, fontFamily: "Inter, sans-serif", fontSize: "13px" }}>
                     No messages yet. Say hello!
                   </Typography>

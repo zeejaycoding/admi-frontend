@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Download, MoreVertical, Search, Building2, RefreshCw } from 'lucide-react';
 import { DataGrid as MuiDataGrid } from '@mui/x-data-grid';
 import {
@@ -32,6 +33,7 @@ import userService from '../../../services/api/userService';
 
 const CampusManagementDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const {
     managementStats,
     managementCampuses,
@@ -594,6 +596,9 @@ const CampusManagementDashboard = () => {
               setPage(model.page);
               setPageSize(model.pageSize);
             }}
+            onRowClick={(params) => {
+              navigate(`/admin/campus-management/${params.row.id}`);
+            }}
             loading={isManagementLoading}
             sx={{
               border: 'none',
@@ -609,6 +614,7 @@ const CampusManagementDashboard = () => {
               },
               '& .MuiDataGrid-row:hover': {
                 backgroundColor: '#F3F4F6',
+                cursor: 'pointer',
               },
               '& .MuiDataGrid-footerContainer': {
                 borderTop: '1px solid #E5E7EB',
