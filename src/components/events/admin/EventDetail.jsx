@@ -37,6 +37,7 @@ import {
 } from "../../../store/slices/eventSlice";
 import { notify } from "../../../services/utils/authUtils";
 import EventEdit from "./EventEdit";
+import { formatAmount, getCurrencyByCode } from "../../../constants/currencies";
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -181,7 +182,7 @@ Date: ${formatDate(event.eventDate || event.date)}
 Time: ${event.timeEstimate || "—"}
 Location: ${event.location || "—"}
 Organizer: ${event.organizerName || "—"}
-Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
+Ticket: ${event.ticketType === "PAID" ? formatAmount(event.ticketPrice, event.ticketCurrency) : "Free"}
       `;
 
               const blob = new Blob([data], { type: "text/plain" });
@@ -255,8 +256,8 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
           },
           {
             title: "Revenue",
-            value: event.ticketType === "PAID" && event.ticketPrice ? `$${event.ticketPrice}` : "Free",
-            detail: "Ticket price",
+            value: event.ticketType === "PAID" && event.ticketPrice ? formatAmount(event.ticketPrice, event.ticketCurrency) : "Free",
+            detail: `Ticket price (${getCurrencyByCode(event.ticketCurrency).displayName})`,
             icon: DollarSign,
             bg: "#DCFCE7",
             iconColor: "#00A63E",
@@ -503,7 +504,7 @@ Ticket: ${event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
       </Typography>
 
       <Typography>
-        <b>Ticket:</b> {event.ticketType === "PAID" ? `$${event.ticketPrice}` : "Free"}
+        <b>Ticket:</b> {event.ticketType === "PAID" ? formatAmount(event.ticketPrice, event.ticketCurrency) : "Free"}
       </Typography>
     </Box>
 

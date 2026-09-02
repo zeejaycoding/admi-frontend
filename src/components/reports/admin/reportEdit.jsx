@@ -10,6 +10,7 @@ import {
 import { X, Save, FileText, MapPin, User, Building2 } from "lucide-react";
 import { updateReport } from "../../../store/slices/reportSlice";
 import { notify } from "../../../services/utils/authUtils";
+import { CURRENCIES, DEFAULT_CURRENCY } from "../../../constants/currencies";
 
 const EditReport = ({ report, onCancel, onSuccess }) => {
   const dispatch = useDispatch();
@@ -23,6 +24,7 @@ const EditReport = ({ report, onCancel, onSuccess }) => {
     coordinator: report?.coordinator || "",
     zonalLeader: report?.zonalLeader || "",
     summary: report?.summary || "",
+    currency: report?.currency || DEFAULT_CURRENCY,
   });
 
   const handleChange = (field) => (e) => {
@@ -42,6 +44,7 @@ const EditReport = ({ report, onCancel, onSuccess }) => {
         coordinator: form.coordinator,
         zonalLeader: form.zonalLeader,
         summary: form.summary,
+        currency: form.currency,
       };
       await dispatch(updateReport({ id: report.id, reportData })).unwrap();
       notify.success("Report updated successfully!");
@@ -134,6 +137,36 @@ const EditReport = ({ report, onCancel, onSuccess }) => {
                 color: "#111827",
               }}
             />
+          </Box>
+
+          {/* Currency */}
+          <Box display="flex" flexDirection="column" gap={1}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <MapPin size={16} color="#011A5A" />
+              <Typography sx={{ color: "#6A7282", fontSize: "14px" }}>
+                Currency
+              </Typography>
+            </Box>
+            <select
+              value={form.currency}
+              onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
+              style={{
+                width: "100%",
+                height: "40px",
+                border: "1px solid #D1D5DB",
+                borderRadius: "8px",
+                padding: "0 12px",
+                color: "#111827",
+                backgroundColor: "#fff",
+                outline: "none",
+              }}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} ({c.symbol}) - {c.displayName}
+                </option>
+              ))}
+            </select>
           </Box>
 
           {/* National Leader */}

@@ -12,6 +12,7 @@ import { loadTokens } from "../../../services/utils/authUtils";import { Share2, 
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { getCurrencyByCode, DEFAULT_CURRENCY } from "../../../constants/currencies";
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -144,7 +145,8 @@ const ReportDetail = () => {
 
   const formatCurrency = (val) => {
     const num = Number(val || 0);
-    return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const symbol = getCurrencyByCode(report.currency || DEFAULT_CURRENCY).symbol;
+    return `${symbol}${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatMonth = (dateStr) => {
@@ -202,7 +204,7 @@ const ReportDetail = () => {
       mb: 1.5,
     }}
   >
-    Report ID: #{report.id} • {report.campus}
+    Report ID: #{report.id} • {report.campus} • {getCurrencyByCode(report.currency || DEFAULT_CURRENCY).code} ({getCurrencyByCode(report.currency || DEFAULT_CURRENCY).symbol})
   </Typography>
 
   {/* Status */}
@@ -327,7 +329,7 @@ const ReportDetail = () => {
   {[
     {
       title: "Total Income",
-      value: `$${report.income}`,
+      value: formatCurrency(report.income),
       icon: TrendingUp,
       bg: "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)",
       border: "#B9F8CF",
@@ -335,7 +337,7 @@ const ReportDetail = () => {
     },
     {
       title: "Total Expenditure",
-      value: `$${report.expenditure}`,
+      value: formatCurrency(report.expenditure),
       icon: TrendingDown,
       bg: "linear-gradient(135deg, #FEF2F2 0%, #FFE2E2 100%)",
       border: "#FFC9C9",
@@ -343,7 +345,7 @@ const ReportDetail = () => {
     },
     {
       title: "Closing Balance",
-      value: `$${report.balance}`,
+      value: formatCurrency(report.balance),
       icon: Wallet,
       bg: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
       border: "#BEDBFF",
@@ -981,7 +983,7 @@ const ReportDetail = () => {
             color: "#E7000B",
           }}
         >
-          ${item.amount}
+          {formatCurrency(item.amount)}
         </Typography>
 
         {/* Percentage */}

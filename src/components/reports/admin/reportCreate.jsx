@@ -27,11 +27,12 @@ import {
   TrendingDown,
   TrendingUp, HandHeart, Medal,
 } from "lucide-react";
+import { CURRENCIES, DEFAULT_CURRENCY, getCurrencyByCode } from "../../../constants/currencies";
 
 const steps = [
   { label: "Basic Info", icon: User },
   { label: "Expenditures", icon: DollarSign },
-  { label: "Income $ Review", icon: Wallet },
+  { label: "Income & Review", icon: Wallet },
   { label: "Receipts & Submit", icon: Upload },
 ];
 
@@ -49,6 +50,7 @@ const AddReport = () => {
   const [coordinator, setCoordinator] = useState("");
   const [zonalLeader, setZonalLeader] = useState("");
   const [summary, setSummary] = useState("");
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [submitting, setSubmitting] = useState(false);
   const { isCoordinator, campusName } = useCoordinatorCampus();
   const effectiveCampus = isCoordinator ? campusName || "" : campus;
@@ -84,6 +86,7 @@ const AddReport = () => {
         partnership: income.partnership || "0",
         papaHonour: income.papaHonour || "0",
         offerings: income.offerings || "0",
+        currency,
         expenses: expenses.map(({ id, ...e }) => e),
       };
 
@@ -176,6 +179,14 @@ const totalIncome =
 const closingBalance = totalIncome - totalExpenditures;
 const isProfit = closingBalance >= 0;
 
+const formatMoney = (val) => {
+  const symbol = getCurrencyByCode(currency).symbol;
+  return `${symbol}${Number(val || 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -232,6 +243,64 @@ const isProfit = closingBalance >= 0;
     padding: "0 12px",
   }}
 />
+            </Paper>
+
+            {/* Currency Selection */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: "18px",
+                backgroundColor: "#FFFFFF",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "12px",
+                    backgroundColor: "#DBEAFE",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Wallet size={20} color="#155DFC" />
+                </Box>
+
+                <Box>
+                  <Typography fontWeight={700} color="#101828">
+                    Currency
+                  </Typography>
+
+                  <Typography fontSize={14} color="#6A7282">
+                    Select the currency for all financial figures in this report
+                  </Typography>
+                </Box>
+              </Box>
+
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: "48px",
+                  color: "#111827",
+                  border: "1px solid #D1D5DB",
+                  borderRadius: "12px",
+                  padding: "0 12px",
+                  backgroundColor: "#fff",
+                  outline: "none",
+                }}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} ({c.symbol}) - {c.displayName}
+                  </option>
+                ))}
+              </select>
             </Paper>
 
             {/* National Leadership */}
@@ -638,7 +707,7 @@ const isProfit = closingBalance >= 0;
       color: "#E7000B",
     }}
   >
-    {totalExpenditures.toFixed(2)}
+    {formatMoney(totalExpenditures)}
   </Typography>
 </Box>
     </Paper>
@@ -877,7 +946,7 @@ case 2:
       </Box>
 
       <Typography fontWeight={700} fontSize={18} color="#00A63E">
-        {totalIncome.toFixed(2)}
+        {formatMoney(totalIncome)}
       </Typography>
     </Box>
 
@@ -912,7 +981,7 @@ case 2:
       </Box>
 
       <Typography fontWeight={700} fontSize={18} color="#E7000B">
-        {totalExpenditures.toFixed(2)}
+        {formatMoney(totalExpenditures)}
       </Typography>
     </Box>
 
@@ -956,7 +1025,7 @@ case 2:
         color={isProfit ? "#00A63E" : "#E7000B"}
       >
         {closingBalance >= 0 ? "+ " : "- " }
-        {Math.abs(closingBalance).toFixed(2)}
+        {formatMoney(Math.abs(closingBalance))}
       </Typography>
     </Box>
   </Box>
@@ -1310,7 +1379,7 @@ case 3:
       </Box>
 
       <Typography fontWeight={700} fontSize={18} color="#00A63E">
-        {totalIncome.toFixed(2)}
+        {formatMoney(totalIncome)}
       </Typography>
     </Box>
 
@@ -1345,7 +1414,7 @@ case 3:
       </Box>
 
       <Typography fontWeight={700} fontSize={18} color="#E7000B">
-        {totalExpenditures.toFixed(2)}
+        {formatMoney(totalExpenditures)}
       </Typography>
     </Box>
 
@@ -1389,7 +1458,7 @@ case 3:
         color={isProfit ? "#00A63E" : "#E7000B"}
       >
         {closingBalance >= 0 ? "+ " : "- " }
-        {Math.abs(closingBalance).toFixed(2)}
+        {formatMoney(Math.abs(closingBalance))}
       </Typography>
     </Box>
   </Box>

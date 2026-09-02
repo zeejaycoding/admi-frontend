@@ -36,6 +36,7 @@ import { notify } from "../../../services/utils/authUtils";
 import EventCreate from "../../events/admin/EventCreate";
 import EventEdit from "../../events/admin/EventEdit";
 import { useNavigate } from "react-router-dom";
+import { formatAmount, getCurrencyByCode } from "../../../constants/currencies";
 
 const EventManagement = () => {
   const dispatch = useDispatch();
@@ -473,6 +474,19 @@ const EventManagement = () => {
               headerAlign: "center",
               renderCell: (params) => (
                 <Typography>{params.value || "—"}</Typography>
+              ),
+            },
+            {
+              field: "ticketPrice",
+              headerName: "Ticket",
+              width: 130,
+              headerAlign: "center",
+              renderCell: (params) => (
+                <Typography sx={{ fontWeight: 600 }}>
+                  {params.row.ticketType === "PAID" && params.row.ticketPrice
+                    ? formatAmount(params.row.ticketPrice, params.row.ticketCurrency)
+                    : "Free"}
+                </Typography>
               ),
             },
             {

@@ -5,6 +5,7 @@ import { updateEvent, clearError, clearSuccess } from "../../../store/slices/eve
 import { notify } from "../../../services/utils/authUtils";
 import { FormInput, FormTextarea, FormSelect } from "../../forms";
 import FileUpload from "../../ui/FileUpload";
+import { CURRENCIES, DEFAULT_CURRENCY } from "../../../constants/currencies";
 
 const EventEdit = ({ event, onSuccess, onCancel }) => {
   const dispatch = useDispatch();
@@ -27,6 +28,7 @@ const EventEdit = ({ event, onSuccess, onCancel }) => {
       eventDate: event?.eventDate || "",
       timeEstimate: event?.timeEstimate || "",
       ticketType: event?.ticketType || "FREE",
+      ticketCurrency: event?.ticketCurrency || DEFAULT_CURRENCY,
       ticketPrice: event?.ticketPrice != null ? event.ticketPrice : "",
       location: event?.location || "",
       isActive: event?.isActive != null ? event.isActive : true,
@@ -45,6 +47,7 @@ const EventEdit = ({ event, onSuccess, onCancel }) => {
         eventDate: data.eventDate || null,
         timeEstimate: data.timeEstimate,
         ticketType: data.ticketType,
+        ticketCurrency: data.ticketCurrency,
         ticketPrice: data.ticketType === "PAID" && data.ticketPrice ? data.ticketPrice : null,
         location: data.location,
         isActive: data.isActive,
@@ -172,21 +175,40 @@ const EventEdit = ({ event, onSuccess, onCancel }) => {
 
             {ticketType === "PAID" && (
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Ticket Price</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g. 49.99"
-                  className="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-[#011A5A]"
-                  style={{ color: "#000" }}
-                  {...control.register("ticketPrice", {
-                    required: ticketType === "PAID" ? "Price is required for paid events" : false,
-                  })}
-                />
-                {errors.ticketPrice && (
-                  <p className="text-red-500 text-xs mt-1">{errors.ticketPrice.message}</p>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Ticket Price</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="e.g. 49.99"
+                      className="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-[#011A5A]"
+                      style={{ color: "#000" }}
+                      {...control.register("ticketPrice", {
+                        required: ticketType === "PAID" ? "Price is required for paid events" : false,
+                      })}
+                    />
+                    {errors.ticketPrice && (
+                      <p className="text-red-500 text-xs mt-1">{errors.ticketPrice.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Currency</label>
+                    <select
+                      className="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-[#011A5A] bg-white"
+                      style={{ color: "#000" }}
+                      {...control.register("ticketCurrency")}
+                    >
+                      {CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.code} ({c.symbol}) - {c.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             )}
           </div>

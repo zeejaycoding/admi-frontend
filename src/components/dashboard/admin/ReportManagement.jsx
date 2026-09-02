@@ -45,6 +45,7 @@ import EditReport from "../../reports/admin/reportEdit";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { getCurrencyByCode, DEFAULT_CURRENCY } from "../../../constants/currencies";
 
 const ReportManagement = () => {
   const dispatch = useDispatch();
@@ -64,17 +65,21 @@ const ReportManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const handleExportExcel = () => {
-    const exportData = filteredEvents.map((report) => ({
-      Date: report.date || "—",
-      Country: report.country || "—",
-      "National Leader": report.nationalLeader || "—",
-      Campus: report.campus || "—",
-      Coordinator: report.coordinator || "—",
-      Income: report.income || 0,
-      Expenditure: report.expenditure || 0,
-      Balance: report.balance || 0,
-      Status: report.status || "Pending",
-    }));
+    const exportData = filteredEvents.map((report) => {
+      const sym = getCurrencyByCode(report.currency || DEFAULT_CURRENCY).symbol;
+      return {
+        Date: report.date || "—",
+        Country: report.country || "—",
+        "National Leader": report.nationalLeader || "—",
+        Campus: report.campus || "—",
+        Coordinator: report.coordinator || "—",
+        Currency: report.currency || DEFAULT_CURRENCY,
+        Income: `${sym}${report.income ?? 0}`,
+        Expenditure: `${sym}${report.expenditure ?? 0}`,
+        Balance: `${sym}${report.balance ?? 0}`,
+        Status: report.status || "Pending",
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -91,6 +96,8 @@ const ReportManagement = () => {
 
     saveAs(fileData, "reports.xlsx");
   };
+  const getRowSymbol = (row) => getCurrencyByCode(row.currency || DEFAULT_CURRENCY).symbol;
+
   const computedTotals = useMemo(() => {
     if (analytics) {
       return {
@@ -107,6 +114,16 @@ const ReportManagement = () => {
       totalBalance: totalIncome - totalExpenditure,
     };
   }, [reports, analytics]);
+
+  const reportCurrency = reports.find((r) => r.currency)?.currency || DEFAULT_CURRENCY;
+
+  const formatMoney = (val) => {
+    const symbol = getCurrencyByCode(reportCurrency).symbol;
+    return `${symbol}${Number(val || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
 
   useEffect(() => {
     dispatch(fetchAllReports());
@@ -382,7 +399,7 @@ const ReportManagement = () => {
         {[
           {
             title: "Total Income",
-            value: `$${computedTotals.totalIncome.toLocaleString()}`,
+            value: formatMoney(computedTotals.totalIncome),
             change: "12.5%",
             positive: true,
             icon: Wallet,
@@ -391,7 +408,7 @@ const ReportManagement = () => {
           },
           {
             title: "Total Expenditure",
-            value: `$${computedTotals.totalExpenditure.toLocaleString()}`,
+            value: formatMoney(computedTotals.totalExpenditure),
             change: "4.2%",
             positive: false,
             icon: DollarSign,
@@ -400,7 +417,7 @@ const ReportManagement = () => {
           },
           {
             title: "Total Balance",
-            value: `$${computedTotals.totalBalance.toLocaleString()}`,
+            value: formatMoney(computedTotals.totalBalance),
             change: "8.1%",
             positive: true,
             icon: BriefcaseBusiness,
@@ -708,7 +725,7 @@ const ReportManagement = () => {
                 <Typography
                   sx={{ fontSize: "14px", fontWeight: 400, color: "#62748E" }}
                 >
-                  {params.row.income || "—"}
+                  {getRowSymbol(params.row)}{Number(params.row.income || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               ),
             },
@@ -722,7 +739,7 @@ const ReportManagement = () => {
                 <Typography
                   sx={{ fontSize: "14px", fontWeight: 400, color: "#62748E" }}
                 >
-                  {params.row.expenditure || "—"}
+                  {getRowSymbol(params.row)}{Number(params.row.expenditure || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               ),
             },
@@ -744,7 +761,7 @@ const ReportManagement = () => {
                       color: isPositive ? "#15B07C" : "#111827",
                     }}
                   >
-                    ${balance}
+                    {getRowSymbol(params.row)}{Number(balance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
                 );
               },
