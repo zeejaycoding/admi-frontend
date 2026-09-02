@@ -19,6 +19,8 @@ import {
   ListItemText,
   Avatar,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   MessagesSquare,
@@ -28,9 +30,9 @@ import {
   Smile,
   Phone,
   MoreVertical,
-  Video,
   Plus,
   X,
+  ChevronLeft,
 } from "lucide-react";
 import useAuth from "../../../hooks/useAuth";
 import coordinatorChatService, { coordinatorChatSocket } from "../../../services/api/coordinatorChatService";
@@ -51,10 +53,17 @@ const formatTime = (iso) => {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
+const RTC_CONFIG = {
+  iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }],
+};
+
 const CoordinatorChat = () => {
   const { user } = useAuth();
   const accessToken = useSelector((s) => s.auth.accessToken);
   const currentUserId = user?.id;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
+  const [mobileView, setMobileView] = useState("list"); // "list" | "chat"
 
   const [stats, setStats] = useState({ activeChats: 0, unreadMessages: 0, onlineNow: 0 });
   const [country, setCountry] = useState("ALL");
@@ -73,9 +82,14 @@ const CoordinatorChat = () => {
   const [typing, setTyping] = useState({});
   const [call, setCall] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
+  const [callPhase, setCallPhase] = useState("idle"); // idle | ringing | connecting | ongoing
 
   const messagesEndRef = useRef(null);
   const draftChanged = useRef(false);
+  const pcRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
+  const remoteAudioRef = useRef(null);
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId) || null, [chats, activeChatId]);
 
@@ -158,17 +172,51 @@ const CoordinatorChat = () => {
       setCall(callData);
       if (data.action === "offer" && callData.recipientId === currentUserId) {
         setIncomingCall(callData);
+        setCallPhase("idle");
       }
       if (data.action !== "offer") setIncomingCall(null);
+      if (data.action === "reject" || data.action === "cancel" || data.action === "end") {
+        resetCall();
+      }
+      if (data.action === "accept") setCallPhase((p) => (p === "idle" ? "connecting" : p));
       setStats((s) => ({ ...s, activeChats: s.activeChats }));
     };
 
     const onCallAck = (data) => {
       if (data?.call) {
         setCall(data.call);
+        if (data.action === "offer") setCallPhase("ringing");
         if (data.action === "cancel" || data.action === "end" || data.action === "reject") {
           setIncomingCall(null);
+          resetCall();
         }
+      }
+    };
+
+    const onRtc = async (data) => {
+      if (data?.conversationId !== activeChatId) return;
+      const rtc = data?.rtc;
+      if (!rtc || !rtc.type) return;
+      try {
+        if (rtc.type === "offer") setCallPhase("connecting");
+        const pc = await getOrCreatePeerConnection(data.conversationId);
+        if (rtc.type === "offer" || rtc.type === "answer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(rtc.sdp));
+          await flushPendingCandidates(pc);
+          if (rtc.type === "offer") {
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendRTC("answer", data.conversationId, pc.localDescription, null);
+          }
+        } else if (rtc.type === "ice" && rtc.candidate) {
+          if (pc.remoteDescription) {
+            await pc.addIceCandidate(new RTCIceCandidate(rtc.candidate));
+          } else {
+            pendingCandidatesRef.current.push(rtc.candidate);
+          }
+        }
+      } catch (e) {
+        console.error("RTC signaling error", e);
       }
     };
 
@@ -178,6 +226,7 @@ const CoordinatorChat = () => {
     coordinatorChatSocket.on("typing", onTyping);
     coordinatorChatSocket.on("call", onCall);
     coordinatorChatSocket.on("call_ack", onCallAck);
+    coordinatorChatSocket.on("rtc", onRtc);
   }, [activeChatId, currentUserId, accessToken]);
 
   const upserialConversation = (prev, message, currentUserId, refresh) => {
@@ -228,7 +277,13 @@ const CoordinatorChat = () => {
 
   const handleSelectChat = (chat) => {
     setActiveChatId(chat.id);
+    setMobileView("chat");
     setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c)));
+  };
+
+  const handleBackToList = () => {
+    setMobileView("list");
+    setIncomingCall(null);
   };
 
   const handleSend = () => {
@@ -262,6 +317,7 @@ const CoordinatorChat = () => {
         return [conv, ...prev];
       });
       setActiveChatId(conv.id);
+      setMobileView("chat");
       setNewChatOpen(false);
       // Refresh stats
       coordinatorChatService.getStats().then((s) => setStats(s?.data || stats));
@@ -270,12 +326,99 @@ const CoordinatorChat = () => {
     }
   };
 
+  const sendRTC = (type, conversationId, sdp, candidate) => {
+    coordinatorChatSocket.call("rtc", {
+      conversationId,
+      rtc: { type, sdp, candidate },
+    });
+  };
+
+  const getOrCreatePeerConnection = async (conversationId) => {
+    if (pcRef.current) return pcRef.current;
+    if (!localStreamRef.current) {
+      localStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    }
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    localStreamRef.current.getTracks().forEach((track) => pc.addTrack(track, localStreamRef.current));
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendRTC("ice", conversationId, null, event.candidate.toJSON());
+      }
+    };
+    pc.ontrack = (event) => {
+      if (remoteAudioRef.current && event.streams && event.streams[0]) {
+        remoteAudioRef.current.srcObject = event.streams[0];
+        remoteAudioRef.current.play().catch(() => {});
+      }
+    };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+        setCallPhase("ongoing");
+        setCall((c) => (c ? { ...c, status: "ONGOING" } : c));
+      } else if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+        setCallPhase("idle");
+      }
+    };
+    pcRef.current = pc;
+    return pc;
+  };
+
+  const flushPendingCandidates = async (pc) => {
+    if (!pc?.remoteDescription) return;
+    const pending = pendingCandidatesRef.current;
+    pendingCandidatesRef.current = [];
+    for (const candidate of pending) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.error("addIceCandidate failed", e);
+      }
+    }
+  };
+
+  const startOutgoingRTC = async (conversationId) => {
+    try {
+      setCallPhase("connecting");
+      const pc = await getOrCreatePeerConnection(conversationId);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendRTC("offer", conversationId, pc.localDescription, null);
+    } catch (e) {
+      console.error("Failed to start audio", e);
+      setCallPhase("idle");
+    }
+  };
+
+  const resetCall = () => {
+    setCall(null);
+    setIncomingCall(null);
+    setCallPhase("idle");
+    if (pcRef.current) {
+      pcRef.current.onicecandidate = null;
+      pcRef.current.ontrack = null;
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
+    }
+    pendingCandidatesRef.current = [];
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+  };
+
+  useEffect(() => () => resetCall(), []);
+
   const handleCall = (action) => {
     if (!activeChatId) return;
     if (action === "offer") {
       coordinatorChatSocket.call("offer", { conversationId: activeChatId, callType: "AUDIO" });
     } else if (action === "cancel") {
       if (call?.id) coordinatorChatSocket.call("cancel", { conversationId: activeChatId, callId: call.id });
+      resetCall();
+    } else if (action === "end") {
+      if (call?.id) coordinatorChatSocket.call("end", { conversationId: activeChatId, callId: call.id });
+      resetCall();
     }
   };
 
@@ -285,7 +428,14 @@ const CoordinatorChat = () => {
       conversationId: activeChatId,
       callId: incomingCall.id,
     });
-    setIncomingCall(null);
+    if (accept) {
+      setCall(incomingCall);
+      setCallPhase("connecting");
+      setIncomingCall(null);
+      startOutgoingRTC(activeChatId);
+    } else {
+      setIncomingCall(null);
+    }
   };
 
   const filteredChats = useMemo(() => {
@@ -383,7 +533,16 @@ const CoordinatorChat = () => {
       {/* Chat interface */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "340px 1fr" }, gap: 3, mt: 4 }}>
         {/* Left panel */}
-        <Box sx={{ background: "#FFFFFF", border: "1px solid #EBEDF0", borderRadius: "16px", boxShadow: "0px 4px 16px #0000000A", overflow: "hidden" }}>
+        <Box
+          sx={{
+            display: isMobile && mobileView !== "list" ? "none" : "block",
+            background: "#FFFFFF",
+            border: "1px solid #EBEDF0",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 16px #0000000A",
+            overflow: "hidden",
+          }}
+        >
           {/* Country dropdown + new chat */}
           <Box sx={{ p: 2, borderBottom: "1px solid #F0F1F3" }}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
@@ -550,11 +709,11 @@ const CoordinatorChat = () => {
         {/* Right panel - opened chat */}
         <Box
           sx={{
+            display: isMobile && mobileView !== "chat" ? "none" : "flex",
             background: "#FFFFFF",
             border: "1px solid #EBEDF0",
             borderRadius: "16px",
             boxShadow: "0px 4px 16px #0000000A",
-            display: "flex",
             flexDirection: "column",
             minHeight: "600px",
             overflow: "hidden",
@@ -574,6 +733,11 @@ const CoordinatorChat = () => {
             <>
               {/* Chat header */}
               <Box sx={{ p: 2.5, borderBottom: "1px solid #E5E7EB", backgroundColor: "#EEF3FF", display: "flex", alignItems: "center", gap: 2 }}>
+                {isMobile && (
+                  <IconButton onClick={handleBackToList} sx={{ color: "#011A5A", p: 0.5, flexShrink: 0 }} title="Back to conversations">
+                    <ChevronLeft size={20} />
+                  </IconButton>
+                )}
                 <Box
                   sx={{
                     width: 42,
@@ -612,19 +776,29 @@ const CoordinatorChat = () => {
                     </Box>
                   </Box>
                   {call && call.conversationId === activeChat.id && (
-                    <Typography sx={{ mt: 0.4, fontFamily: "Inter, sans-serif", fontWeight: 500, fontSize: "11px", color: call.status === "ACCEPTED" ? "#00C950" : "#011A5A" }}>
-                      Call {call.status.toLowerCase()} {call.callType?.toLowerCase()}
+                    <Typography sx={{ mt: 0.4, fontFamily: "Inter, sans-serif", fontWeight: 500, fontSize: "11px", color: callPhase === "ongoing" ? "#00C950" : "#011A5A" }}>
+                      Audio call {callPhase === "ongoing" ? "ongoing" : callPhase === "ringing" ? "ringing..." : callPhase === "connecting" ? "connecting..." : call.status.toLowerCase()}
                     </Typography>
                   )}
                 </Box>
 
                 {/* Actions */}
                 <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
-                  <IconButton onClick={() => handleCall(call?.id && call.status === "REQUESTED" ? "cancel" : "offer")} sx={{ color: "#011A5A", p: 0.5, "&:hover": { bgcolor: "#FFFFFF99" } }} title="Audio call">
+                  <IconButton
+                    onClick={() =>
+                      call?.conversationId === activeChat.id && (callPhase === "ringing" || callPhase === "connecting" || callPhase === "ongoing")
+                        ? handleCall("end")
+                        : handleCall("offer")
+                    }
+                    sx={{
+                      color: callPhase === "ongoing" || callPhase === "connecting" || callPhase === "ringing" ? "#EF4444" : "#011A5A",
+                      p: 0.5,
+                      bgcolor: callPhase === "ongoing" ? "#FFEEEE" : "transparent",
+                      "&:hover": { bgcolor: "#FFFFFF99" },
+                    }}
+                    title={callPhase === "ongoing" || callPhase === "connecting" || callPhase === "ringing" ? "End audio call" : "Start audio call"}
+                  >
                     <Phone size={18} />
-                  </IconButton>
-                  <IconButton onClick={() => coordinatorChatSocket.call("offer", { conversationId: activeChat.id, callType: "VIDEO" })} sx={{ color: "#011A5A", p: 0.5, "&:hover": { bgcolor: "#FFFFFF99" } }} title="Video call">
-                    <Video size={18} />
                   </IconButton>
                   <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} sx={{ color: "#011A5A", p: 0.5, "&:hover": { bgcolor: "#FFFFFF99" } }}>
                     <MoreVertical size={18} />
@@ -764,6 +938,8 @@ const CoordinatorChat = () => {
           <Button onClick={() => setNewChatOpen(false)} sx={{ color: "#011A5A", textTransform: "none" }}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <audio ref={remoteAudioRef} autoPlay style={{ display: "none" }} />
     </Box>
   );
 };

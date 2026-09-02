@@ -575,7 +575,7 @@ const CampusManagementDashboard = () => {
         </div>
       </div>
 
-      <div className="w-full bg-white rounded-xl shadow-sm">
+      <div className="w-full bg-white rounded-xl shadow-sm" style={{ width: '100%' }}>
         {isManagementLoading && managementCampuses.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
             <CircularProgress size={40} sx={{ color: '#003999' }} />
@@ -584,17 +584,15 @@ const CampusManagementDashboard = () => {
           <MuiDataGrid
             rows={managementCampuses}
             columns={columns}
-            pageSize={pageSize}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            disableSelectionOnClick
+            pageSizeOptions={[5, 10, 25, 50]}
+            disableRowSelectionOnClick
             autoHeight
             paginationMode="server"
             rowCount={managementTotalElements || 0}
-            page={page}
-            onPageChange={(newPage) => setPage(newPage)}
-            onPageSizeChange={(newPageSize) => {
-              setPageSize(newPageSize);
-              setPage(0);
+            paginationModel={{ page, pageSize }}
+            onPaginationModelChange={(model) => {
+              setPage(model.page);
+              setPageSize(model.pageSize);
             }}
             loading={isManagementLoading}
             sx={{
