@@ -19,6 +19,12 @@ const CAMPUS_ENDPOINTS = {
   UPDATE: '/campuses',
   DELETE: '/campuses',
   UPLOAD_IMAGE: '/campuses',
+
+  // Campus Management Dashboard endpoints
+  // NOTE: the backend does not expose /campuses/management/* routes, so the
+  // dashboard reuses the generic paginated/search + stats endpoints instead.
+  MANAGEMENT_STATS: '/campuses/stats',
+  MANAGEMENT_LIST: '/campuses/search',
 };
 
 export const campusService = {
@@ -110,6 +116,17 @@ export const campusService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  // Campus Management Dashboard methods
+  getManagementStats: async () => {
+    const response = await apiClient.get(CAMPUS_ENDPOINTS.MANAGEMENT_STATS);
+    return response.data;
+  },
+
+  getManagementList: async (params = {}) => {
+    const response = await apiClient.get(CAMPUS_ENDPOINTS.MANAGEMENT_LIST, { params });
     return response.data;
   },
 };

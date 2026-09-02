@@ -159,6 +159,31 @@ export const getPublicCampusDetails = createAsyncThunk(
   }
 );
 
+// Campus Management Dashboard thunks
+export const fetchManagementStats = createAsyncThunk(
+  'campus/fetchManagementStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await campusService.getManagementStats();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch management stats' });
+    }
+  }
+);
+
+export const fetchManagementCampuses = createAsyncThunk(
+  'campus/fetchManagementCampuses',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await campusService.getManagementList(params || {});
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch campuses' });
+    }
+  }
+);
+
 const initialState = {
   campuses: [],
   featuredCampuses: [],
@@ -179,6 +204,17 @@ const initialState = {
   },
   totalPages: 0,
   totalElements: 0,
+  // Campus Management Dashboard state
+  managementStats: {
+    total: 0,
+    active: 0,
+    underReview: 0,
+    inactive: 0,
+  },
+  managementCampuses: [],
+  managementTotalPages: 0,
+  managementTotalElements: 0,
+  isManagementLoading: false,
 };
 
 const campusSlice = createSlice({
@@ -409,9 +445,51 @@ const campusSlice = createSlice({
       .addCase(getPublicCampusDetails.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+
+      // Campus Management Dashboard
+      .addCase(fetchManagementStats.pending, (state) => {
+        state.isManagementLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchManagementStats.fulfilled, (state, action) => {
+        state.isManagementLoading = false;
+        const data = action.payload.data || action.payload;
+        state.managementStats = {
+          total: data.total || data.totalCampuses || 0,
+          active: data.active || data.activeCampuses || 0,
+          underReview: data.underReview || data.underReviewCampuses || 0,
+          inactive: data.inactive || data.inactiveCampuses || 0,
+        };
+      })
+      .addCase(fetchManagementStats.rejected, (state, action) => {
+        state.isManagementLoading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(fetchManagementCampuses.pending, (state) => {
+        state.isManagementLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchManagementCampuses.fulfilled, (state, action) => {
+        state.isManagementLoading = false;
+        const responseData = action.payload.data || action.payload;
+        state.managementCampuses = responseData.campuses || responseData.content || responseData;
+        state.managementTotalPages = responseData.totalPages || 0;
+        state.managementTotalElements = responseData.totalElements || 0;
+      })
+      .addCase(fetchManagementCampuses.rejected, (state, action) => {
+        state.isManagementLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearError, clearCurrentCampus, setFilters, resetFilters } = campusSlice.actions;
+export const {
+  clearError,
+  clearCurrentCampus,
+  setFilters,
+  resetFilters,
+} = campusSlice.actions;
+
 export default campusSlice.reducer;

@@ -36,6 +36,7 @@ import SubmissionsOverview from '../components/dashboard/admin/SubmissionsOvervi
 import RolesPermissions from '../components/dashboard/admin/RolesPermissions';
 import CoordinatorChat from '../components/dashboard/admin/CoordinatorChat';
 import NationalLeaderDashboard from '../components/dashboard/admin/NationalLeaderDashboard';
+import CampusManagementDashboard from '../components/dashboard/admin/CampusManagementDashboard';
 import { useRegion } from '../context/RegionContext';
 
 const USAHomePage = lazy(() => import('../pages/regions/usa/USAHomePage'));
@@ -189,6 +190,14 @@ const AppRoutes = () => {
               <NonCoordinatorRoute>
                 <CampusManagement />
               </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="campus-management"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <CampusManagementDashboard />
+              </ProtectedRoute>
             }
           />
           <Route

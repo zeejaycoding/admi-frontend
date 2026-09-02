@@ -187,7 +187,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
           {/* New Report */}
 <Button
   startIcon={<Plus size={18} />}
-        onClick={() => navigate("/admin/power-portal/travelling/createForm")}
+        onClick={() => navigate("/admin/reports/create")}
 
   sx={{
     backgroundColor: "#011A5A",

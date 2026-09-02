@@ -8,6 +8,7 @@ import {
   MessagesSquare,
   Globe,
   Church,
+  School,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import admiLogo from '../../assets/logo-admi.png';
@@ -32,6 +33,7 @@ const iconMap = {
   marriage: HeartHandshake,
   'coordinator-chat': MessagesSquare,
   'national-leader': Globe,
+  'campus-management': School,
   'pbs-registrations': Church,
   'discipleship-registrations': Church,
   'other-programmes': Church,

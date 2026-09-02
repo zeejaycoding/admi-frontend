@@ -338,7 +338,7 @@ const DataGrid = ({
     <Box sx={{ 
       height: { xs: 400, sm: 500, md: 600 }, 
       width: '100%', 
-      minWidth: 0,
+      minWidth: '100%',
       overflow: 'hidden',
       ...sx 
     }}>

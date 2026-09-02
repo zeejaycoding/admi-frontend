@@ -7,6 +7,7 @@ const adminItems = [
   { to: '/admin/national-leader', label: 'National Leader', icon: 'national-leader', section: 'admin' },
   { to: '/admin/users', label: 'Users', icon: 'users', section: 'admin' },
   { to: '/admin/campuses', label: 'Campuses', icon: 'campuses', section: 'admin' },
+  { to: '/admin/campus-management', label: 'Campus Management', icon: 'campus-management', section: 'admin' },
   { to: '/admin/books', label: 'Books', icon: 'books', section: 'admin' },
   { to: '/admin/courses', label: 'Courses', icon: 'courses', section: 'admin' },
      { to: '/admin/events', label: 'Events', icon: 'events', section: 'admin' },
