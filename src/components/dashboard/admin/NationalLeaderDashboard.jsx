@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, Users, Clock, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Calendar, Users, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -11,180 +11,296 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
+import { useSelector } from 'react-redux';
+import campusService from '../../../services/api/campusService';
+import travelFormService from '../../../services/api/travelFormService';
+import childDedicationService from '../../../services/api/childDedicationService';
+import marriageCertificateService from '../../../services/api/marriageCertificateService';
+import reportService from '../../../services/api/reportService';
 
-const statCards = [
-  {
-    title: 'Total Campus Count',
-    value: '24',
-    subtitle: 'Campuses in region',
-    bgColor: 'bg-[#E5ECFF]',
-    icon: Calendar,
-    iconColor: '#3163EC',
-  },
-  {
-    title: 'Total Members',
-    value: '1,847',
-    subtitle: 'Aggregate across all campuses',
-    bgColor: 'bg-[#F0FDF4]',
-    icon: Users,
-    iconColor: '#07FF53',
-  },
-  {
-    title: 'Programme Registration',
-    value: '312',
-    subtitle: 'Active registrations',
-    bgColor: 'bg-[#FEFBE8]',
-    icon: Clock,
-    iconColor: '#EACB06',
-  },
-  {
-    title: 'Pending approvals',
-    value: '18',
-    subtitle: 'Require urgent attention',
-    bgColor: 'bg-[#FEF3F1]',
-    icon: AlertTriangle,
-    iconColor: '#F74949',
-  },
-];
+const strip = (arr) =>
+  arr == null
+    ? []
+    : Array.isArray(arr)
+    ? arr
+    : Array.isArray(arr?.campuses)
+    ? arr.campuses
+    : Array.isArray(arr?.content)
+    ? arr.content
+    : Array.isArray(arr?.data)
+    ? arr.data
+    : Array.isArray(arr?.data?.campuses)
+    ? arr.data.campuses
+    : Array.isArray(arr?.data?.data)
+    ? arr.data.data
+    : [];
 
-const barData = [
-  { name: 'Discipleship', value: 78, fill: '#5F57FF' },
-  { name: 'PBS', value: 62, fill: '#33CFFF' },
-  { name: 'Youth', value: 91, fill: '#40C4AA' },
-  { name: 'Women', value: 35, fill: '#EEEFF2' },
-  { name: 'Leadership', value: 54, fill: '#FFD6A8' },
-];
-
-const pendingApprovals = [
-  {
-    id: 1,
-    name: 'Discipleship Registration - John Doe',
-    location: 'Lagos Campus',
-    submitted: '2 hours ago',
-  },
-  {
-    id: 2,
-    name: 'PBS Form Submission - Sarah Smith',
-    location: 'Abuja Campus',
-    submitted: '5 hours ago',
-  },
-  {
-    id: 3,
-    name: 'Youth Programme - Michael Brown',
-    location: 'Port Harcourt Campus',
-    submitted: '1 day ago',
-  },
-  {
-    id: 4,
-    name: 'Women\'s Conference - Emily Davis',
-    location: 'Ibadan Campus',
-    submitted: '1 day ago',
-  },
-  {
-    id: 5,
-    name: 'Leadership Training - David Wilson',
-    location: 'Enugu Campus',
-    submitted: '2 days ago',
-  },
-];
-
-const upcomingEvents = [
-  {
-    id: 1,
-    name: 'Regional Leadership Conference',
-    date: 'Mar 15, 2026',
-  },
-  {
-    id: 2,
-    name: 'Youth Empowerment Summit',
-    date: 'Mar 22, 2026',
-  },
-  {
-    id: 3,
-    name: 'Women\'s Prayer Breakfast',
-    date: 'Apr 5, 2026',
-  },
-  {
-    id: 4,
-    name: 'Discipleship Training Workshop',
-    date: 'Apr 12, 2026',
-  },
-  {
-    id: 5,
-    name: 'PBS Graduation Ceremony',
-    date: 'Apr 20, 2026',
-  },
-];
-
-const recentActivities = [
-  {
-    id: 1,
-    name: 'New registration submitted',
-    time: '10 min ago',
-    location: 'Lagos Campus',
-  },
-  {
-    id: 2,
-    name: 'Form approved by coordinator',
-    time: '25 min ago',
-    location: 'Abuja Campus',
-  },
-  {
-    id: 3,
-    name: 'Event attendance updated',
-    time: '1 hour ago',
-    location: 'Port Harcourt Campus',
-  },
-  {
-    id: 4,
-    name: 'New member added to PBS',
-    time: '2 hours ago',
-    location: 'Ibadan Campus',
-  },
-  {
-    id: 5,
-    name: 'Discipleship form completed',
-    time: '3 hours ago',
-    location: 'Enugu Campus',
-  },
-];
-
-const CustomBarLabel = (props) => {
-  const { x, y, width, value } = props;
-  return (
-    <text
-      x={x + width / 2}
-      y={y - 8}
-      fill="#0D0D12"
-      textAnchor="middle"
-      style={{ fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-    >
-      {value}%
-    </text>
-  );
+const formatTimeAgo = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const diffMs = Date.now() - date.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 };
 
 const NationalLeaderDashboard = () => {
+  const { user: currentUser } = useSelector((state) => state.auth);
+
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Campus
+  const [campusStats, setCampusStats] = useState(null);
+  const [campuses, setCampuses] = useState([]);
+
+  // Power portal aggregates (region-scoped by backend for NATIONAL_LEADER)
+  const [portalStats, setPortalStats] = useState(null);
+
+  // Form lists (region-scoped by backend)
+  const [travelForms, setTravelForms] = useState([]);
+  const [childDedications, setChildDedications] = useState([]);
+  const [marriages, setMarriages] = useState([]);
+  const [reports, setReports] = useState([]);
+
+  const region = currentUser?.region;
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled([
+        // [campusStats, campusList]
+        Promise.all([
+          campusService.getCampusStats().then((r) => r?.data?.data || r?.data || null),
+          campusService.getManagementList({ size: 100 }).then((r) => strip(r?.data)),
+        ]),
+        travelFormService.getStats().then((r) => r?.data?.data || r?.data || null),
+        travelFormService.getAll().then((r) => strip(r?.data)),
+        childDedicationService.getAll().then((r) => strip(r?.data)),
+        marriageCertificateService.getAll().then((r) => strip(r?.data)),
+        reportService.getAllReports().then((r) => strip(r?.data)),
+      ]);
+
+      const campusResult = results[0].status === 'fulfilled' ? results[0].value : [null, []];
+      setCampusStats(campusResult[0] || null);
+      setCampuses(campusResult[1] || []);
+      setPortalStats(results[1].status === 'fulfilled' ? results[1].value : null);
+      setTravelForms(results[2].status === 'fulfilled' ? results[2].value : []);
+      setChildDedications(results[3].status === 'fulfilled' ? results[3].value : []);
+      setMarriages(results[4].status === 'fulfilled' ? results[4].value : []);
+      setReports(results[5].status === 'fulfilled' ? results[5].value : []);
+      setLastUpdated(new Date());
+    } catch (err) {
+      // keep previous data on transient failures
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAll();
+    const interval = setInterval(loadAll, 15000);
+    return () => clearInterval(interval);
+  }, [loadAll]);
+
+  // ---- Derived stat cards ----
+  const totalCampuses = campusStats?.totalCampuses ?? campuses.length ?? 0;
+  const totalRecords =
+    (portalStats?.travelForms?.total ?? travelForms.length) +
+    (portalStats?.childDedications?.total ?? childDedications.length) +
+    (portalStats?.marriageCertificates?.total ?? marriages.length) +
+    reports.length;
+
+  const pendingCount =
+    (portalStats?.travelForms?.pending ?? 0) +
+    (portalStats?.childDedications?.pending ?? 0) +
+    (portalStats?.marriageCertificates?.pending ?? 0) +
+    reports.filter((r) => !r?.status || String(r?.status).toLowerCase() === 'pending').length;
+
+  const totalRegistrations = totalRecords;
+
+  const statCards = [
+    {
+      title: 'Total Campus Count',
+      value: totalCampuses,
+      subtitle: region ? `Campuses in ${region}` : 'Campuses in region',
+      bgColor: 'bg-[#E5ECFF]',
+      icon: Calendar,
+      iconColor: '#3163EC',
+    },
+    {
+      title: 'Total Records',
+      value: totalRecords,
+      subtitle: 'Travel, Child, Marriage & Reports',
+      bgColor: 'bg-[#F0FDF4]',
+      icon: Users,
+      iconColor: '#07FF53',
+    },
+    {
+      title: 'Total Registrations',
+      value: totalRegistrations,
+      subtitle: `Across ${totalCampuses} campus(es)`,
+      bgColor: 'bg-[#FEFBE8]',
+      icon: Clock,
+      iconColor: '#EACB06',
+    },
+    {
+      title: 'Pending Approvals',
+      value: pendingCount,
+      subtitle: 'Require your attention',
+      bgColor: 'bg-[#FEF3F1]',
+      icon: AlertTriangle,
+      iconColor: '#F74949',
+    },
+  ];
+
+  // ---- Programme registrations by type ----
+  const barData = [
+    { name: 'Travel Forms', value: portalStats?.travelForms?.total ?? travelForms.length, fill: '#33CFFF' },
+    { name: 'Child', value: portalStats?.childDedications?.total ?? childDedications.length, fill: '#40C4AA' },
+    { name: 'Marriages', value: portalStats?.marriageCertificates?.total ?? marriages.length, fill: '#EEEFF2' },
+    { name: 'Reports', value: reports.length, fill: '#FFD6A8' },
+  ];
+  const maxBar = Math.max(1, ...barData.map((d) => d.value));
+
+  // ---- Pending approvals ----
+  const pendingApprovals = [];
+  travelForms
+    .filter((f) => String(f?.status || '').toLowerCase() === 'pending')
+    .slice(0, 3)
+    .forEach((f) =>
+      pendingApprovals.push({
+        id: `tf-${f.id}`,
+        name: `Travel Form - ${f.submitterName || 'Submission'}`,
+        location: f.campus || '—',
+        submitted: formatTimeAgo(f.submittedAt || f.submitted) || '—',
+      })
+    );
+  childDedications
+    .filter((c) => String(c?.status || '').toLowerCase() === 'pending')
+    .slice(0, 3)
+    .forEach((c) =>
+      pendingApprovals.push({
+        id: `cd-${c.id}`,
+        name: `Child Dedication - ${c.childName || 'Submission'}`,
+        location: c.campus || '—',
+        submitted: formatTimeAgo(c.submittedAt || c.submitted) || '—',
+      })
+    );
+  marriages
+    .filter((m) => String(m?.status || '').toLowerCase() === 'pending')
+    .slice(0, 3)
+    .forEach((m) =>
+      pendingApprovals.push({
+        id: `mc-${m.id}`,
+        name: `Marriage - ${m.groomName || 'Submission'}`,
+        location: m.campus || '—',
+        submitted: formatTimeAgo(m.submittedAt || m.submitted) || '—',
+      })
+    );
+  reports
+    .filter((r) => !r?.status || String(r?.status).toLowerCase() === 'pending')
+    .slice(0, 3)
+    .forEach((r) =>
+      pendingApprovals.push({
+        id: `rep-${r.id}`,
+        name: `Report - ${r.country || r.campus || 'Report'}`,
+        location: r.campus || '—',
+        submitted: formatTimeAgo(r.createdAt || r.updatedAt) || '—',
+      })
+    );
+  pendingApprovals.sort((a, b) => (a.submitted || '').localeCompare(b.submitted || ''));
+
+  // ---- Recent activity (merged, newest first) ----
+  const recentActivities = [];
+  travelForms.slice(0, 5).forEach((f) =>
+    recentActivities.push({
+      id: `tf-${f.id}`,
+      name: `Travel form ${f.status || 'submitted'}`,
+      time: formatTimeAgo(f.submittedAt || f.submitted),
+      location: f.campus || '—',
+      ts: new Date(f.submittedAt || f.submitted || 0).getTime(),
+    })
+  );
+  childDedications.slice(0, 5).forEach((c) =>
+    recentActivities.push({
+      id: `cd-${c.id}`,
+      name: `Child dedication ${c.status || 'submitted'}`,
+      time: formatTimeAgo(c.submittedAt || c.submitted),
+      location: c.campus || '—',
+      ts: new Date(c.submittedAt || c.submitted || 0).getTime(),
+    })
+  );
+  marriages.slice(0, 5).forEach((m) =>
+    recentActivities.push({
+      id: `mc-${m.id}`,
+      name: `Marriage certificate ${m.status || 'submitted'}`,
+      time: formatTimeAgo(m.submittedAt || m.submitted),
+      location: m.campus || '—',
+      ts: new Date(m.submittedAt || m.submitted || 0).getTime(),
+    })
+  );
+  reports.slice(0, 5).forEach((r) =>
+    recentActivities.push({
+      id: `rep-${r.id}`,
+      name: `Financial report recorded`,
+      time: formatTimeAgo(r.createdAt || r.updatedAt),
+      location: r.campus || r.country || '—',
+      ts: new Date(r.createdAt || r.updatedAt || 0).getTime(),
+    })
+  );
+  recentActivities.sort((a, b) => b.ts - a.ts);
+  const recentActivityTop = recentActivities.slice(0, 8);
+
+  // ---- Upcoming events (region campuses as placeholders) ----
+  const upcomingEvents = campuses.slice(0, 8).map((c, i) => ({
+    id: c.id ?? i,
+    name: `${c.name || `Campus ${i + 1}`}`,
+    date: c.region || '—',
+  }));
+
   return (
     <div className="min-h-screen bg-[#fafafa] p-4 md:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1
-          className="text-black font-bold"
-          style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif' }}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1
+            className="text-black font-bold"
+            style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif' }}
+          >
+            National Leader Regional Dashboard
+          </h1>
+          <p
+            style={{
+              fontSize: '16px',
+              fontFamily: 'Inter, sans-serif',
+              color: '#474C59',
+            }}
+            className="mt-1"
+          >
+            {region
+              ? `Consolidated live view of all activities for ${region}`
+              : 'Consolidated live view of all activities in your region'}
+          </p>
+        </div>
+        <button
+          onClick={loadAll}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-[#E5E7EB] text-sm font-medium text-[#0A0A0A] hover:bg-gray-100 transition-colors"
+          style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          National Leader Regional Dashboard
-        </h1>
-        <p
-          style={{
-            fontSize: '16px',
-            fontFamily: 'Inter, sans-serif',
-            color: '#474C59',
-          }}
-          className="mt-1"
-        >
-          Consolidated view of all activities, key metrics, and management tools
-          for your region
-        </p>
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          Refresh
+          {lastUpdated && (
+            <span className="text-xs text-[#6A7282] ml-1">
+              {lastUpdated.toLocaleTimeString('en-US')}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
@@ -248,7 +364,7 @@ const NationalLeaderDashboard = () => {
               fontWeight: 500,
             }}
           >
-            Programme Registrations by Type
+            Records by Type
           </h2>
           <p
             className="text-[#0D0D1294] mb-6"
@@ -258,19 +374,12 @@ const NationalLeaderDashboard = () => {
               fontWeight: 400,
             }}
           >
-            Count by programme category
+            Live counts from travel, child, marriage and reports
           </p>
 
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={barData}
-              margin={{ top: 20, right: 10, left: -10, bottom: 5 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="#E5E7EB"
-              />
+            <BarChart data={barData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
               <XAxis
                 dataKey="name"
                 axisLine={false}
@@ -281,12 +390,10 @@ const NationalLeaderDashboard = () => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#666D80', fontSize: 12, fontFamily: 'Inter, sans-serif' }}
-                tickFormatter={(v) => `${v}%`}
-                domain={[0, 100]}
-                ticks={[0, 25, 50, 75, 100]}
+                domain={[0, maxBar]}
               />
               <Tooltip
-                formatter={(value) => [`${value}%`, 'Registrations']}
+                formatter={(value) => [value, 'Records']}
                 contentStyle={{
                   borderRadius: 8,
                   fontFamily: 'Inter, sans-serif',
@@ -297,7 +404,12 @@ const NationalLeaderDashboard = () => {
                 {barData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
-                <LabelList content={<CustomBarLabel />} dataKey="value" />
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(v) => `${v}`}
+                  style={{ fill: '#0D0D12', fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -332,31 +444,37 @@ const NationalLeaderDashboard = () => {
                 className="text-[#717182] mt-1"
                 style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
               >
-                Forms or requests awaiting National Leader action
+                Forms awaiting your action
               </p>
             </div>
           </div>
 
           <div className="mt-4 space-y-3 max-h-[300px] overflow-y-auto pr-1">
-            {pendingApprovals.map((approval) => (
-              <div
-                key={approval.id}
-                className="p-3 bg-[#FFF7ED] border border-[#FFD6A8] rounded-lg"
-              >
-                <p
-                  className="text-[#0A0A0A]"
-                  style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+            {pendingApprovals.length === 0 ? (
+              <p className="text-[#717182] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                No pending approvals. All caught up!
+              </p>
+            ) : (
+              pendingApprovals.slice(0, 8).map((approval) => (
+                <div
+                  key={approval.id}
+                  className="p-3 bg-[#FFF7ED] border border-[#FFD6A8] rounded-lg"
                 >
-                  {approval.name}
-                </p>
-                <p
-                  className="text-[#717182] mt-1"
-                  style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
-                >
-                  {approval.location} • {approval.submitted}
-                </p>
-              </div>
-            ))}
+                  <p
+                    className="text-[#0A0A0A]"
+                    style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                  >
+                    {approval.name}
+                  </p>
+                  <p
+                    className="text-[#717182] mt-1"
+                    style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                  >
+                    {approval.location} • {approval.submitted}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -386,46 +504,62 @@ const NationalLeaderDashboard = () => {
                 className="text-[#0A0A0A]"
                 style={{ fontSize: '16px', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
-                Upcoming Events
+                Campuses in Region
               </p>
               <p
                 className="text-[#717182] mt-1"
                 style={{ fontSize: '16px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
               >
-                Events scheduled within the region
+                Campuses within your assigned region
               </p>
             </div>
           </div>
 
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-            {upcomingEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center justify-between p-4 bg-white border border-[#E5E7EB] rounded-lg"
-              >
-                <p
-                  className="text-[#0A0A0A]"
-                  style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+            {campuses.length === 0 ? (
+              <p className="text-[#717182] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                No campuses found in this region.
+              </p>
+            ) : (
+              campuses.slice(0, 10).map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between p-4 bg-white border border-[#E5E7EB] rounded-lg"
                 >
-                  {event.name}
-                </p>
-                <span
-                  className="px-3 py-1 bg-[#ECEEF2] rounded-full text-[#0A0A0A]"
-                  style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-                >
-                  {event.date}
-                </span>
-              </div>
-            ))}
+                  <div>
+                    <p
+                      className="text-[#0A0A0A]"
+                      style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                    >
+                      {c.name}
+                    </p>
+                    <p
+                      className="text-[#6A7282] text-xs mt-0.5"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {c.city || c.fullAddress || c.region || '—'}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-[12px] font-medium ${
+                      c.isActive === false
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {c.coordinator || 'No coordinator'}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <div className="flex items-start gap-3 mb-4">
             <div className="relative" style={{ flexShrink: 0 }}>
-              <div
-                className="w-8 h-8 rounded-full bg-[#DCFCE7] flex items-center justify-center"
-              >
+              <div className="w-8 h-8 rounded-full bg-[#DCFCE7] flex items-center justify-center">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -450,46 +584,50 @@ const NationalLeaderDashboard = () => {
                 className="text-[#717182] mt-1"
                 style={{ fontSize: '16px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
               >
-                Latest form submissions, registrations, changes
+                Latest submissions across your region
               </p>
             </div>
           </div>
 
           <div className="space-y-0 max-h-[300px] overflow-y-auto pr-1">
-            {recentActivities.map((activity, index) => (
-              <React.Fragment key={activity.id}>
-                <div className="flex items-start gap-3 py-3">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full bg-[#2B7FFF] mt-1.5 flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
+            {recentActivityTop.length === 0 ? (
+              <p className="text-[#717182] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                No recent activity yet.
+              </p>
+            ) : (
+              recentActivityTop.map((activity, index) => (
+                <React.Fragment key={activity.id}>
+                  <div className="flex items-start gap-3 py-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#2B7FFF] mt-1.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p
+                          className="text-[#0A0A0A]"
+                          style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                        >
+                          {activity.name}
+                        </p>
+                        <p
+                          className="text-[#6A7282]"
+                          style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                        >
+                          {activity.time || '—'}
+                        </p>
+                      </div>
                       <p
-                        className="text-[#0A0A0A]"
-                        style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
-                      >
-                        {activity.name}
-                      </p>
-                      <p
-                        className="text-[#6A7282]"
+                        className="text-[#4A5565] mt-0.5"
                         style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
                       >
-                        {activity.time}
+                        {activity.location}
                       </p>
                     </div>
-                    <p
-                      className="text-[#4A5565] mt-0.5"
-                      style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
-                    >
-                      {activity.location}
-                    </p>
                   </div>
-                </div>
-                {index < recentActivities.length - 1 && (
-                  <div className="border-b border-[#E5E7EB]" />
-                )}
-              </React.Fragment>
-            ))}
+                  {index < recentActivityTop.length - 1 && (
+                    <div className="border-b border-[#E5E7EB]" />
+                  )}
+                </React.Fragment>
+              ))
+            )}
           </div>
         </div>
       </div>

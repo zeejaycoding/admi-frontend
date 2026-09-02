@@ -1,11 +1,11 @@
-import React ,{ useRef, useEffect} from "react";
+import React ,{ useRef, useEffect, useState} from "react";
 import { Box, Typography, Paper, Chip, Button, Divider,
  } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getReportById } from "../../../store/slices/reportSlice";
+import { getReportById, updateReportStatus } from "../../../store/slices/reportSlice";
 import { API_BASE_URL } from "../../../constants/api";
-import { loadTokens } from "../../../services/utils/authUtils";import { Share2, Printer, Download, CheckCircle2, Clock3, TrendingUp,
+import { loadTokens } from "../../../services/utils/authUtils";import { Share2, Printer, Download, CheckCircle2, XCircle, Clock3, TrendingUp,
   TrendingDown, HandHeart, Medal, Wallet,
   DollarSign, Paperclip, FileText, Building2,
   User, Calendar, MapPin, RotateCw,
@@ -19,8 +19,33 @@ const ReportDetail = () => {
   const dispatch = useDispatch();
   const { selectedReport, isLoading } = useSelector((state) => state.report);
   const accessToken = useSelector((state) => state.auth?.accessToken);
+  const currentUser = useSelector((state) => state.auth?.user);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const report = selectedReport;
+
+  const rawRoles = currentUser?.roles || currentUser?.authorities || [];
+  const roles = rawRoles.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
+
+  const handleApprove = async () => {
+    setActionLoading(true);
+    const result = await dispatch(updateReportStatus({ id, status: "Approved" }));
+    setActionLoading(false);
+    if (result.meta.requestStatus === "fulfilled") {
+      alert("Report approved successfully");
+    }
+  };
+
+  const handleReject = async () => {
+    const reason = prompt("Enter rejection reason (optional):");
+    setActionLoading(true);
+    const result = await dispatch(updateReportStatus({ id, status: "Rejected", rejectionReason: reason || null }));
+    setActionLoading(false);
+    if (result.meta.requestStatus === "fulfilled") {
+      alert("Report rejected");
+    }
+  };
 
   const reportRef = useRef(null);
 
@@ -220,13 +245,21 @@ const ReportDetail = () => {
       border:
         report.status === "Approved"
           ? "1px solid #7BF1A8"
-          : "1px solid #FCD34D",
+          : report.status === "Rejected"
+            ? "1px solid #FCA5A5"
+            : "1px solid #FCD34D",
       backgroundColor:
-        report.status === "Approved" ? "#DCFCE7" : "#FFF7ED",
+        report.status === "Approved"
+          ? "#DCFCE7"
+          : report.status === "Rejected"
+            ? "#FEF2F2"
+            : "#FFF7ED",
     }}
   >
     {report.status === "Approved" ? (
       <CheckCircle2 size={16} color="#008236" />
+    ) : report.status === "Rejected" ? (
+      <XCircle size={16} color="#B91C1C" />
     ) : (
       <Clock3 size={16} color="#BB4D00" />
     )}
@@ -235,14 +268,40 @@ const ReportDetail = () => {
       sx={{
         fontSize: "12px",
         fontWeight: 600,
-        color: report.status === "Approved" ? "#008236" : "#BB4D00",
+        color:
+          report.status === "Approved"
+            ? "#008236"
+            : report.status === "Rejected"
+              ? "#B91C1C"
+              : "#BB4D00",
       }}
     >
       {report.status === "Approved"
         ? "Approved • Verified"
-        : "Pending • Verification"}
+        : report.status === "Rejected"
+          ? "Rejected"
+          : "Pending • Verification"}
     </Typography>
   </Box>
+
+  {report.status === "Rejected" && report.rejectionReason ? (
+    <Typography
+      sx={{
+        mt: 1.5,
+        fontSize: "13px",
+        fontWeight: 500,
+        color: "#B91C1C",
+        backgroundColor: "#FEF2F2",
+        border: "1px solid #FCA5A5",
+        borderRadius: "10px",
+        px: 1.8,
+        py: 1,
+        display: "inline-block",
+      }}
+    >
+      Rejection reason: {report.rejectionReason}
+    </Typography>
+  ) : null}
 </Box>
 
 
@@ -308,6 +367,50 @@ const ReportDetail = () => {
       onClick={handleDownloadPDF}
     >
       Download PDF
+    </Button>
+
+    {/* Approve */}
+    <Button
+      startIcon={<CheckCircle2 size={16} color="#FFFFFF" />}
+      onClick={handleApprove}
+      disabled={actionLoading || report.status !== "Pending"}
+      sx={{
+        backgroundColor: report.status === "Pending" ? "#008236" : "#9CA3AF",
+        color: "#FFFFFF",
+        borderRadius: "10px",
+        px: 2.5,
+        py: 1,
+        textTransform: "none",
+        fontWeight: 600,
+        display: canManage ? "inline-flex" : "none",
+        "&:hover": {
+          backgroundColor: report.status === "Pending" ? "#008236" : "#9CA3AF",
+        },
+      }}
+    >
+      {actionLoading ? "Processing..." : "Approve"}
+    </Button>
+
+    {/* Reject */}
+    <Button
+      startIcon={<XCircle size={16} color="#FFFFFF" />}
+      onClick={handleReject}
+      disabled={actionLoading || report.status !== "Pending"}
+      sx={{
+        backgroundColor: report.status === "Pending" ? "#D4183D" : "#9CA3AF",
+        color: "#FFFFFF",
+        borderRadius: "10px",
+        px: 2.5,
+        py: 1,
+        textTransform: "none",
+        fontWeight: 600,
+        display: canManage ? "inline-flex" : "none",
+        "&:hover": {
+          backgroundColor: report.status === "Pending" ? "#D4183D" : "#9CA3AF",
+        },
+      }}
+    >
+      {actionLoading ? "Processing..." : "Reject"}
     </Button>
   </Box>
 </Box>

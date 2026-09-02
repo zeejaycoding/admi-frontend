@@ -54,9 +54,9 @@ const reportService = {
     return response.data;
   },
 
-  updateReportStatus: async (id, status) => {
+  updateReportStatus: async (id, status, rejectionReason) => {
     const response = await apiClient.put(`${REPORT_ENDPOINTS.UPDATE_STATUS}/${id}/status`, null, {
-      params: { status }
+      params: { status, rejectionReason }
     });
     return response.data;
   },

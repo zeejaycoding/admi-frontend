@@ -4,6 +4,7 @@ const ENDPOINTS = {
   ALL: '/marriage-certificates',
   BY_ID: '/marriage-certificates',
   CREATE: '/marriage-certificates',
+  STATUS: '/marriage-certificates',
   DELETE: '/marriage-certificates',
 };
 
@@ -20,6 +21,11 @@ const marriageCertificateService = {
 
   create: async (data) => {
     const response = await apiClient.post(ENDPOINTS.CREATE, data);
+    return response.data;
+  },
+
+  updateStatus: async (id, status, rejectionReason) => {
+    const response = await apiClient.put(`${ENDPOINTS.STATUS}/${id}/status`, { status, rejectionReason });
     return response.data;
   },
 

@@ -39,9 +39,9 @@ export const createReport = createAsyncThunk(
 
 export const updateReportStatus = createAsyncThunk(
   'report/updateReportStatus',
-  async ({ id, status }, { rejectWithValue }) => {
+  async ({ id, status, rejectionReason }, { rejectWithValue }) => {
     try {
-      const response = await reportService.updateReportStatus(id, status);
+      const response = await reportService.updateReportStatus(id, status, rejectionReason);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: 'Failed to update report status' });

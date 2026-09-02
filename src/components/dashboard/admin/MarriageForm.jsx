@@ -8,7 +8,7 @@ import {
   TextField,
   InputAdornment,
 } from "@mui/material";
-import { Plus, Edit, Trash2, MapPin, Search } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Search, CheckCircle2, XCircle } from "lucide-react";
 
 import { DataGrid, Button } from "../../ui";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
@@ -17,12 +17,15 @@ import { useNavigate } from "react-router-dom";
 import {
   fetchAllCertificates,
   deleteCertificate,
+  updateMarriageStatus,
 } from "../../../store/slices/marriageCertificateSlice";
 
 const MarriageForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const currentUser = useSelector((state) => state.auth?.user);
+  const [actionId, setActionId] = useState(null);
 
   const { certificates, isLoading } = useSelector(
     (state) => state.marriageCertificate,
@@ -31,6 +34,10 @@ const MarriageForm = () => {
   const [formToDelete, setFormToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+
+  const rawRoles = currentUser?.roles || currentUser?.authorities || [];
+  const roles = rawRoles.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
 
   useEffect(() => {
     dispatch(fetchAllCertificates());
@@ -99,6 +106,29 @@ const MarriageForm = () => {
     } finally {
       setDeleteModalOpen(false);
       setFormToDelete(null);
+    }
+  };
+
+  const handleApprove = async (cert) => {
+    setActionId(cert.id);
+    const result = await dispatch(updateMarriageStatus({ id: cert.id, status: "Approved" }));
+    setActionId(null);
+    if (result.meta.requestStatus === "fulfilled") {
+      notify.success("Marriage certificate approved successfully.");
+    } else {
+      notify.error("Failed to approve the marriage certificate.");
+    }
+  };
+
+  const handleReject = async (cert) => {
+    const reason = prompt("Enter rejection reason (optional):");
+    setActionId(cert.id);
+    const result = await dispatch(updateMarriageStatus({ id: cert.id, status: "Rejected", rejectionReason: reason || null }));
+    setActionId(null);
+    if (result.meta.requestStatus === "fulfilled") {
+      notify.success("Marriage certificate rejected.");
+    } else {
+      notify.error("Failed to reject the marriage certificate.");
     }
   };
 
@@ -415,6 +445,8 @@ const MarriageForm = () => {
                 const val = params.value;
                 const isSent = val === "Sent";
                 const isPending = val === "Pending";
+                const isApproved = val === "Approved";
+                const isRejected = val === "Rejected";
 
                 return (
                   <Box
@@ -423,17 +455,21 @@ const MarriageForm = () => {
                       py: 0.6,
                       borderRadius: "999px",
                       border: `1px solid ${
-                        isSent
+                        isApproved
                           ? "#A4F4CFCC"
-                          : isPending
-                            ? "#FEE685CC"
-                            : "#FEE685CC"
+                          : isRejected
+                            ? "#FECACA"
+                            : isSent
+                              ? "#A4F4CFCC"
+                              : "#FEE685CC"
                       }`,
-                      bgcolor: isSent
+                      bgcolor: isApproved
                         ? "#ECFDF5"
-                        : isPending
-                          ? "#FFFBEB"
-                          : "#FFFBEB",
+                        : isRejected
+                          ? "#FEF2F2"
+                          : isSent
+                            ? "#ECFDF5"
+                            : "#FFFBEB",
                       display: "inline-flex",
                       alignItems: "center",
                     }}
@@ -442,11 +478,13 @@ const MarriageForm = () => {
                       sx={{
                         fontSize: 13,
                         fontWeight: 500,
-                        color: isSent
+                        color: isApproved
                           ? "#007A55"
-                          : isPending
-                            ? "#BB4D00"
-                            : "#991B1B",
+                          : isRejected
+                            ? "#991B1B"
+                            : isSent
+                              ? "#007A55"
+                              : "#BB4D00",
                       }}
                     >
                       {val}
@@ -458,11 +496,38 @@ const MarriageForm = () => {
             {
               field: "actions",
               headerName: "Action",
-              width: 110,
+              width: 150,
               sortable: false,
               headerClassName: "travel-header",
-              renderCell: (params) => (
-                <Box display="flex" gap={1}>
+              renderCell: (params) => {
+                const st = params.row.status;
+                const actionable = st === "Sent" || st === "Pending";
+                return (
+                <Box display="flex" gap={1} alignItems="center">
+                  {canManage && (
+                    <>
+                      <CheckCircle2
+                        size={18}
+                        color="#008236"
+                        style={{ cursor: actionable ? "pointer" : "not-allowed", opacity: actionable ? 1 : 0.4 }}
+                        onClick={(e) => {
+                          if (!actionable) return;
+                          e.stopPropagation();
+                          handleApprove(params.row);
+                        }}
+                      />
+                      <XCircle
+                        size={18}
+                        color="#D4183D"
+                        style={{ cursor: actionable ? "pointer" : "not-allowed", opacity: actionable ? 1 : 0.4 }}
+                        onClick={(e) => {
+                          if (!actionable) return;
+                          e.stopPropagation();
+                          handleReject(params.row);
+                        }}
+                      />
+                    </>
+                  )}
                   <Edit
                     size={16}
                     color="#374151"
@@ -478,7 +543,8 @@ const MarriageForm = () => {
                     }}
                   />
                 </Box>
-              ),
+                );
+              },
             },
           ]}
           loading={isLoading}

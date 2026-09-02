@@ -11,13 +11,15 @@ import {
   Edit,
   Trash2,
   MapPin,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 import { DataGrid, Button } from "../../ui";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
-import { fetchAllDedications, deleteDedication } from "../../../store/slices/childDedicationSlice";
+import { fetchAllDedications, deleteDedication, updateDedicationStatus } from "../../../store/slices/childDedicationSlice";
 
 const ChildForm = () => {
   const dispatch = useDispatch();
@@ -31,6 +33,13 @@ const ChildForm = () => {
   const [formToDelete, setFormToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+
+  const currentUser = useSelector((state) => state.auth?.user);
+  const [actionId, setActionId] = useState(null);
+
+  const rawRoles = currentUser?.roles || currentUser?.authorities || [];
+  const roles = rawRoles.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
 
   useEffect(() => {
     dispatch(fetchAllDedications());
@@ -80,6 +89,29 @@ useEffect(() => {
     }
     setDeleteModalOpen(false);
     setFormToDelete(null);
+  };
+
+  const handleApprove = async (row) => {
+    setActionId(row.id);
+    const result = await dispatch(updateDedicationStatus({ id: row.id, status: "Approved" }));
+    setActionId(null);
+    if (result.meta.requestStatus === "fulfilled") {
+      notify.success("Child dedication approved successfully");
+    } else {
+      notify.error(result.payload?.message || "Failed to approve");
+    }
+  };
+
+  const handleReject = async (row) => {
+    const reason = prompt("Enter rejection reason (optional):");
+    setActionId(row.id);
+    const result = await dispatch(updateDedicationStatus({ id: row.id, status: "Rejected", rejectionReason: reason || null }));
+    setActionId(null);
+    if (result.meta.requestStatus === "fulfilled") {
+      notify.success("Child dedication rejected");
+    } else {
+      notify.error(result.payload?.message || "Failed to reject");
+    }
   };
 
   const paginated = useMemo(() => {
@@ -275,13 +307,71 @@ useEffect(() => {
     ),
   },
   {
+    field: "status",
+    headerName: "Status",
+    width: 120,
+    headerClassName: "travel-header",
+    renderCell: (params) => {
+      const val = params.value;
+      const isApproved = val === "Approved";
+      const isRejected = val === "Rejected";
+      return (
+        <Box
+          sx={{
+            px: 1.5,
+            py: 0.6,
+            borderRadius: "999px",
+            border: `1px solid ${isApproved ? "#A4F4CFCC" : isRejected ? "#FECACA" : "#FEE685CC"}`,
+            bgcolor: isApproved ? "#ECFDF5" : isRejected ? "#FEF2F2" : "#FFFBEB",
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: isApproved ? "#007A55" : isRejected ? "#991B1B" : "#BB4D00",
+            }}
+          >
+            {val}
+          </Typography>
+        </Box>
+      );
+    },
+  },
+  {
     field: "actions",
     headerName: "Actions",
-    width: 110,
+    width: 150,
     headerClassName: "travel-header",
     sortable: false,
     renderCell: (params) => (
-      <Box display="flex" gap={1}>
+      <Box display="flex" gap={1} alignItems="center">
+        {canManage && (
+          <>
+            <CheckCircle2
+              size={18}
+              color="#008236"
+              style={{ cursor: params.row.status === "Pending" ? "pointer" : "not-allowed", opacity: params.row.status === "Pending" ? 1 : 0.4 }}
+              onClick={(e) => {
+                if (params.row.status !== "Pending") return;
+                e.stopPropagation();
+                handleApprove(params.row);
+              }}
+            />
+            <XCircle
+              size={18}
+              color="#D4183D"
+              style={{ cursor: params.row.status === "Pending" ? "pointer" : "not-allowed", opacity: params.row.status === "Pending" ? 1 : 0.4 }}
+              onClick={(e) => {
+                if (params.row.status !== "Pending") return;
+                e.stopPropagation();
+                handleReject(params.row);
+              }}
+            />
+          </>
+        )}
         <Edit
           size={16}
           color="#374151"

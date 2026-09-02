@@ -22,12 +22,21 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getDedicationById, updateDedicationStatus, clearSelected } from "../../../store/slices/childDedicationSlice";
 
+const normalizeRoles = (user) => {
+  const raw = user?.roles || user?.authorities || [];
+  return raw.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
+};
+
 const ChildDetailForm = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const dispatch = useDispatch();
   const { selectedDedication } = useSelector((state) => state.childDedication);
+  const currentUser = useSelector((state) => state.auth?.user);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const roles = normalizeRoles(currentUser);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
 
   const dedication = selectedDedication || state?.dedication;
 
@@ -592,6 +601,7 @@ const ChildDetailForm = () => {
       py: 1.3,
       textTransform: "none",
       fontWeight: 500,
+      display: canManage ? "inline-flex" : "none",
       "&:hover": {
         backgroundColor: dedication?.status === "Pending" ? "#030213" : "#9CA3AF",
       },
@@ -612,6 +622,7 @@ const ChildDetailForm = () => {
       py: 1.3,
       textTransform: "none",
       fontWeight: 500,
+      display: canManage ? "inline-flex" : "none",
       "&:hover": {
         backgroundColor: dedication?.status === "Pending" ? "#D4183D" : "#9CA3AF",
       },

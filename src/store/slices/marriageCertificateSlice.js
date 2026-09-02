@@ -49,6 +49,18 @@ export const deleteCertificate = createAsyncThunk(
   }
 );
 
+export const updateMarriageStatus = createAsyncThunk(
+  'marriageCertificate/updateStatus',
+  async ({ id, status, rejectionReason }, { rejectWithValue }) => {
+    try {
+      const response = await marriageCertificateService.updateStatus(id, status, rejectionReason);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to update status' });
+    }
+  }
+);
+
 const initialState = {
   certificates: [],
   selectedCertificate: null,
@@ -104,6 +116,21 @@ const marriageCertificateSlice = createSlice({
       .addCase(deleteCertificate.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload?.message || 'Failed to delete marriage certificate';
+      })
+      .addCase(updateMarriageStatus.pending, (state) => { state.isLoading = true; state.error = null; })
+      .addCase(updateMarriageStatus.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.success = true;
+        const updated = action.payload;
+        state.selectedCertificate = updated;
+        const idx = state.certificates.findIndex((c) => c.id === updated?.id);
+        if (idx !== -1) {
+          state.certificates[idx] = { ...state.certificates[idx], status: updated.status, rejectionReason: updated.rejectionReason };
+        }
+      })
+      .addCase(updateMarriageStatus.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message || 'Failed to update status';
       });
   },
 });
