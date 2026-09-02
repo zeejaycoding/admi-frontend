@@ -93,9 +93,14 @@ const CampusManagementDashboard = () => {
   const fetchCoordinators = useCallback(async () => {
     setIsLoadingCoordinators(true);
     try {
-      const response = await userService.getAllUsers({ role: 'COORDINATOR', size: 100 });
+      const response = await userService.getAllUsers({ size: 100 });
       const users = response.data?.users || response.data?.content || response.data || [];
-      setCoordinators(Array.isArray(users) ? users : []);
+      const allUsers = Array.isArray(users) ? users : [];
+      const hasCoordinatorRole = (user) =>
+        (user.roles || []).some(
+          (r) => (typeof r === 'string' ? r : r?.name || r?.role || '') === 'COORDINATOR'
+        );
+      setCoordinators(allUsers.filter(hasCoordinatorRole));
     } catch (err) {
       notify.error('Failed to load coordinators');
     } finally {
