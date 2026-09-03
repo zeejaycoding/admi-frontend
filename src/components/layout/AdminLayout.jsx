@@ -5,6 +5,8 @@ import Sidebar from './Sidebar';
 const adminItems = [
   { to: '/admin', label: 'Overview', icon: 'overview', section: 'admin' },
   { to: '/admin/national-leader', label: 'National Leader', icon: 'national-leader', section: 'admin' },
+  { to: '/admin/personnel-leaders', label: 'Personnel & Leaders', icon: 'personnel', section: 'admin' },
+  { to: '/admin/national-reports-analytics', label: 'Reports & Analytics', icon: 'nl-reports', section: 'admin' },
   { to: '/admin/users', label: 'Users', icon: 'users', section: 'admin' },
   { to: '/admin/campuses', label: 'Campuses', icon: 'campuses', section: 'admin' },
   { to: '/admin/campus-management', label: 'Campus Management', icon: 'campus-management', section: 'admin' },

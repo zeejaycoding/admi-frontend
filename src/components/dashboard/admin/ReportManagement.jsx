@@ -148,6 +148,10 @@ const ReportManagement = () => {
       filtered = filtered.filter(
         (report) => report.status?.toLowerCase() === "approved",
       );
+    } else if (statusFilter === "rejected") {
+      filtered = filtered.filter(
+        (report) => report.status?.toLowerCase() === "rejected",
+      );
     } else if (statusFilter === "pending") {
       filtered = filtered.filter(
         (report) => report.status?.toLowerCase() === "pending",
@@ -585,6 +589,7 @@ const ReportManagement = () => {
             >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
               <option value="pending">Pending</option>
             </select>
           </Box>
@@ -777,6 +782,12 @@ const ReportManagement = () => {
               renderCell: (params) => {
                 const status = (params.row.status || "Pending").toLowerCase();
                 const isApproved = status === "approved";
+                const isRejected = status === "rejected";
+
+                const bgColor = isApproved ? "#ECFDF5" : isRejected ? "#FEF2F2" : "#FFFBEB";
+                const dotColor = isApproved ? "#007A55" : isRejected ? "#B91C1C" : "#BB4D00";
+                const textColor = isApproved ? "#007A55" : isRejected ? "#B91C1C" : "#BB4D00";
+                const label = isApproved ? "Approved" : isRejected ? "Rejected" : "Pending";
 
                 return (
                   <Box
@@ -787,7 +798,7 @@ const ReportManagement = () => {
                       px: 1.5,
                       py: 0.7,
                       borderRadius: "999px",
-                      backgroundColor: isApproved ? "#ECFDF5" : "#FFFBEB",
+                      backgroundColor: bgColor,
                       width: "fit-content",
                       minWidth: "110px",
                     }}
@@ -797,7 +808,7 @@ const ReportManagement = () => {
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        backgroundColor: isApproved ? "#007A55" : "#BB4D00",
+                        backgroundColor: dotColor,
                       }}
                     />
 
@@ -805,10 +816,10 @@ const ReportManagement = () => {
                       sx={{
                         fontSize: "13px",
                         fontWeight: 400,
-                        color: isApproved ? "#007A55" : "#BB4D00",
+                        color: textColor,
                       }}
                     >
-                      {isApproved ? "Approved" : "Pending"}
+                      {label}
                     </Typography>
                   </Box>
                 );

@@ -9,6 +9,7 @@ import {
   Globe,
   Church,
   School,
+  UserCog,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import admiLogo from '../../assets/logo-admi.png';
@@ -33,10 +34,12 @@ const iconMap = {
   marriage: HeartHandshake,
   'coordinator-chat': MessagesSquare,
   'national-leader': Globe,
+  'nl-reports': FileText,
   'campus-management': School,
   'pbs-registrations': Church,
   'discipleship-registrations': Church,
   'other-programmes': Church,
+  personnel: UserCog,
 };
 
 const PERMISSION_TO_ICON = {
@@ -81,6 +84,7 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
 
   const NATIONAL_LEADER_ICONS = new Set([
     'national-leader',
+    'nl-reports',
     'campuses',
     'campus-management',
     'events',
@@ -92,6 +96,7 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
     'child',
     'marriage',
     'reports',
+    'personnel',
   ]);
 
   const visibleAdminItems = items

@@ -37,6 +37,8 @@ import SubmissionsOverview from '../components/dashboard/admin/SubmissionsOvervi
 import RolesPermissions from '../components/dashboard/admin/RolesPermissions';
 import CoordinatorChat from '../components/dashboard/admin/CoordinatorChat';
 import NationalLeaderDashboard from '../components/dashboard/admin/NationalLeaderDashboard';
+import PersonnelAndLeaderManagement from '../components/dashboard/admin/PersonnelAndLeaderManagement';
+import NationalLeaderReportAnalytics from '../components/dashboard/admin/NationalLeaderReportAnalytics';
 import CampusManagementDashboard from '../components/dashboard/admin/CampusManagementDashboard';
 import CampusDetailPage from '../components/dashboard/admin/CampusDetailPage';
 import { useRegion } from '../context/RegionContext';
@@ -181,6 +183,22 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
                 <NationalLeaderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="personnel-leaders"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <PersonnelAndLeaderManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="national-reports-analytics"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <NationalLeaderReportAnalytics />
               </ProtectedRoute>
             }
           />

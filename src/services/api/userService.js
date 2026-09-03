@@ -92,6 +92,18 @@ const userService = {
     });
     return data;
   },
+
+  // Tag a personnel record for admin review
+  async tagForReview(userId, reason) {
+    const { data } = await apiClient.post(`/users/${userId}/tag-for-review`, { reason });
+    return data;
+  },
+
+  // Clear the review tag from a personnel record
+  async clearReviewTag(userId) {
+    const { data } = await apiClient.delete(`/users/${userId}/tag-for-review`);
+    return data;
+  },
 };
 
 export default userService;
