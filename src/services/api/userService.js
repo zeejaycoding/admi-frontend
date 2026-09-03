@@ -104,6 +104,12 @@ const userService = {
     const { data } = await apiClient.delete(`/users/${userId}/tag-for-review`);
     return data;
   },
+
+  // Get a personnel member's travel/child/marriage/report records
+  async getPersonnelRecords(userId) {
+    const { data } = await apiClient.get(`/users/${userId}/personnel-records`);
+    return data;
+  },
 };
 
 export default userService;

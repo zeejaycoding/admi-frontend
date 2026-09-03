@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import useRoleBase from '../../../hooks/useRoleBase';
 import { Box, Typography, Tab, Tabs } from '@mui/material';
 import { Save, X, Eye } from 'lucide-react';
 import { Button } from '../../ui';
@@ -30,6 +31,7 @@ import { isMinistryForm } from '../../../constants/ministryForms';
 const FormBuilder = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const { formId } = useParams();
   const { selectedForm, isLoading, error, success } = useSelector((state) => state.form);
 
@@ -100,7 +102,7 @@ const FormBuilder = () => {
     if (success) {
       notify.success(formId ? 'Form updated successfully!' : 'Form created successfully!');
       dispatch(clearSuccess());
-      navigate('/admin/forms');
+      navigate(rolePath('/admin/forms'));
     }
   }, [success, formId, dispatch, navigate]);
 
@@ -267,7 +269,7 @@ const FormBuilder = () => {
   };
 
   const handleCancel = () => {
-    navigate('/admin/forms');
+    navigate(rolePath('/admin/forms'));
   };
 
   return (

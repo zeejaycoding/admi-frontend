@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import marriageCertificateImg from "../../../assets/marriagecertificate.png";
 import {
@@ -8,10 +8,6 @@ import {
   TextField,
   InputAdornment,
   Checkbox,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Dialog,
   DialogContent,
   DialogActions,
@@ -23,17 +19,8 @@ import {
   Send,
   Mail,
 } from "lucide-react";
-import campusService from "../../../services/api/campusService";
 import { createCertificate } from "../../../store/slices/marriageCertificateSlice";
 import { notify, formatBackendErrorMessage } from "../../../services/utils/authUtils";
-import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
-
-const DEMO_CAMPUSES = [
-  "Sanctuary Campus",
-  "Hilltop Campus",
-  "Riverside Campus",
-  "Grace Campus",
-];
 
 const steps = [
   { label: "Fill Marriage Form", icon: FileText },
@@ -70,26 +57,6 @@ const MarriageFormCreate = () => {
   const [additionalMessage, setAdditionalMessage] = useState("");
   const [certificateNumber, setCertificateNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [campuses, setCampuses] = useState([]);
-  const { isCoordinator, campusName } = useCoordinatorCampus();
-  const effectiveCampus = isCoordinator ? campusName || "" : campus;
-
-  useEffect(() => {
-    const loadCampuses = async () => {
-      try {
-        const res = await campusService.getAllCampuses({ size: 500 });
-        const raw = res?.campuses || res?.content || res;
-        const list = Array.isArray(raw) ? raw : [];
-        const names = list.map((c) => (typeof c === "string" ? c : c?.name)).filter(Boolean);
-        setCampuses(names.length > 0 ? names : DEMO_CAMPUSES);
-      } catch (err) {
-        setCampuses(DEMO_CAMPUSES);
-      }
-    };
-    loadCampuses();
-  }, []);
-
-
   const handleSubmit = async () => {
     if (
       !partner1Name.trim() ||
@@ -97,7 +64,7 @@ const MarriageFormCreate = () => {
       !partner2Name.trim() ||
       !partner2Email.trim() ||
       !dateOfMarriage ||
-      !effectiveCampus ||
+      !campus ||
       !officiatingMinister.trim()
     ) {
       notify.error("Please fill in all required fields before sending.");
@@ -110,7 +77,7 @@ const MarriageFormCreate = () => {
       brideName: partner2Name.trim(),
       brideEmail: partner2Email.trim(),
       marriageDate: dateOfMarriage,
-      campus: effectiveCampus,
+      campus: campus,
       minister: officiatingMinister.trim(),
       maidOfHonor: maidOfHonor.trim(),
       bestMan: bestMan.trim(),
@@ -399,34 +366,14 @@ const prevStepLabel =
                 }}
               />
 
-              {isCoordinator ? (
-                <TextField
-                  fullWidth
-                  label="Campus"
-                  value={effectiveCampus}
-                  disabled
-                  variant="outlined"
-                />
-              ) : (
-              <FormControl fullWidth>
-                <InputLabel>Campus *</InputLabel>
-                <Select
-                  label="Campus *"
-                  value={campus}
-                  onChange={(e) => setCampus(e.target.value)}
-                  sx={{
-                    backgroundColor: "#fff",
-                    borderRadius: "8px",
-                  }}
-                >
-                  {campuses.map((name) => (
-                    <MenuItem key={name} value={name}>
-                      {name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              )}
+              <TextField
+                fullWidth
+                label="Campus *"
+                placeholder="Enter Campus"
+                value={campus}
+                onChange={(e) => setCampus(e.target.value)}
+                variant="outlined"
+              />
 
               <TextField
                 fullWidth

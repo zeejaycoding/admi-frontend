@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
+import useRoleBase from '../../../hooks/useRoleBase';
 import {
   Box,
   Typography,
@@ -33,6 +34,7 @@ import apiClient from '../../../services/utils/apiClient';
 const FormSubmissions = ({ formId: formIdProp } = {}) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const { formId: formIdParam } = useParams();
   // Reusable by an explicit form id (e.g. the Reports view) or the /forms/:formId/submissions route
   const formId = formIdProp || formIdParam;
@@ -358,7 +360,7 @@ const FormSubmissions = ({ formId: formIdProp } = {}) => {
           <Button
             variant="contained"
             startIcon={<ArrowLeft size={18} />}
-            onClick={() => navigate('/admin/forms')}
+            onClick={() => navigate(rolePath('/admin/forms'))}
             size="small"
             sx={{
               backgroundColor: '#6b7280',

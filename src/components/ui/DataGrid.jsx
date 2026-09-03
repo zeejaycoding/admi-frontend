@@ -259,6 +259,17 @@ const DataGrid = ({
   };
 
   // Always include actions column if actions are provided
+  const hasPaginationModel = props.paginationModel !== undefined;
+
+  const deprecatedPaginationProps = hasPaginationModel
+    ? {}
+    : {
+        page: paginationMode === 'server' ? (pagination.page || 0) : page,
+        pageSize: paginationMode === 'server' ? (pagination.size || 20) : pageSize,
+        onPageChange,
+        onPageSizeChange,
+      };
+
   const baseColumns = columns.length > 0 ? columns : defaultColumns;
   
   // Check if actions column already exists in baseColumns
@@ -348,12 +359,9 @@ const DataGrid = ({
         loading={loading}
         pagination
         paginationMode={paginationMode}
-        rowCount={paginationMode === 'server' ? (pagination.totalElements || rowCount || 0) : undefined}
-        page={paginationMode === 'server' ? (pagination.page || 0) : page}
-        pageSize={paginationMode === 'server' ? (pagination.size || 20) : pageSize}
+        rowCount={paginationMode === 'server' ? (pagination.totalElements || rowCount || 0) : (hasPaginationModel ? rowCount : undefined)}
         rowsPerPageOptions={[10, 20, 50, 100]}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
+        {...deprecatedPaginationProps}
         onSortModelChange={onSortModelChange}
         onRowClick={onRowClick}
         getRowClassName={getRowClassName}

@@ -33,10 +33,12 @@ import {
 } from "../../../store/slices/travelFormSlice";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
+import useRoleBase from "../../../hooks/useRoleBase";
 
 const PowerPortalManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const { stats, isLoading } = useSelector(
     (state) => state.travelForm,
   );
@@ -187,7 +189,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
           {/* New Report */}
 <Button
   startIcon={<Plus size={18} />}
-        onClick={() => navigate("/admin/reports/create")}
+        onClick={() => navigate(rolePath("/admin/reports/create"))}
 
   sx={{
     backgroundColor: "#011A5A",
@@ -586,7 +588,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
   >
     {/* Travelling */}
     <Box
-      onClick={() => navigate("/admin/power-portal/travelling/createForm")}
+      onClick={() => navigate(rolePath("/admin/power-portal/travelling/createForm"))}
       sx={{
         border: "1px solid #0000001A",
         borderRadius: "12px",
@@ -616,7 +618,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
 
     {/* Child */}
     <Box
-      onClick={() => navigate("/admin/power-portal/child/create")}
+      onClick={() => navigate(rolePath("/admin/power-portal/child/create"))}
       sx={{
         border: "1px solid #0000001A",
         borderRadius: "12px",
@@ -646,7 +648,7 @@ const pendingApprovals = (stats?.pendingApprovals || []).length > 0
 
     {/* Marriage */}
     <Box
-      onClick={() => navigate("/admin/power-portal/marriage/create")}
+      onClick={() => navigate(rolePath("/admin/power-portal/marriage/create"))}
       sx={{
         border: "1px solid #0000001A",
         borderRadius: "12px",

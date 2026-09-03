@@ -10,6 +10,7 @@ import {
   Church,
   School,
   UserCog,
+  Megaphone,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import admiLogo from '../../assets/logo-admi.png';
@@ -40,6 +41,7 @@ const iconMap = {
   'discipleship-registrations': Church,
   'other-programmes': Church,
   personnel: UserCog,
+  communications: Megaphone,
 };
 
 const PERMISSION_TO_ICON = {
@@ -73,6 +75,10 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
     if (userPermissions.has(permKey)) allowedItems.add(iconKey);
   });
 
+  // Role-specific URL base so the overview tab highlights correctly at the
+  // prefix root (e.g. /coordinator for a coordinator, /national-leader for an NL).
+  const roleBase = isNationalLeader ? '/national-leader' : isCoordinator ? '/coordinator' : '/admin';
+
   const COORDINATOR_ICONS = new Set([
     'travel',
     'marriage',
@@ -97,7 +103,11 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
     'marriage',
     'reports',
     'personnel',
+    'communications',
   ]);
+
+  // Icons that are exclusive to the National Leader panel (hidden from Admin / Super Admin)
+  const NL_ONLY_ICONS = new Set(['nl-reports', 'communications']);
 
   const visibleAdminItems = items
     .filter((i) => i.section === 'admin')
@@ -110,6 +120,7 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
       }
       if (i.icon === 'coordinator-chat') return isCoordinator;
       if (i.icon === 'national-leader') return isNationalLeader;
+      if (NL_ONLY_ICONS.has(i.icon)) return false;
       return !Object.values(PERMISSION_TO_ICON).includes(i.icon) || allowedItems.has(i.icon);
     });
 
@@ -181,7 +192,7 @@ const Sidebar = ({ items = [], collapsed = false, onToggle, variant = 'persisten
               <NavLink
                 key={it.to}
                 to={it.to}
-                end={it.to === '/admin'}
+                end={it.to === roleBase || it.to === '/admin'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${
                     isActive

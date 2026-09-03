@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import useRoleBase from '../../../hooks/useRoleBase';
 import { Download, MoreVertical, Search, Building2, RefreshCw } from 'lucide-react';
 import { DataGrid as MuiDataGrid } from '@mui/x-data-grid';
 import {
@@ -34,6 +35,7 @@ import userService from '../../../services/api/userService';
 const CampusManagementDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const {
     managementStats,
     managementCampuses,
@@ -597,7 +599,7 @@ const CampusManagementDashboard = () => {
               setPageSize(model.pageSize);
             }}
             onRowClick={(params) => {
-              navigate(`/admin/campus-management/${params.row.id}`);
+              navigate(rolePath(`/admin/campus-management/${params.row.id}`));
             }}
             loading={isManagementLoading}
             sx={{

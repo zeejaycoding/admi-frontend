@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -7,36 +7,19 @@ import {
   TextField,
   Paper,
   InputAdornment,
-    FormControl,
-  MenuItem,
-  Select,
-
 } from "@mui/material";
 import { Calendar, Plus } from "lucide-react";
 import { Button } from "../../ui";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
 import { createDedication } from "../../../store/slices/childDedicationSlice";
-import { fetchAllCampuses } from "../../../store/slices/campusSlice";
-import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
-
+import useRoleBase from "../../../hooks/useRoleBase";
 
 const ChildFormCreate = () => {
 const dispatch = useDispatch();
 const navigate = useNavigate();
-
-const { campuses } = useSelector((state) => state.campus);
+const { rolePath } = useRoleBase();
 const { isLoading } = useSelector((state) => state.childDedication);
-const { isCoordinator, campusName } = useCoordinatorCampus();
-
-const mockCampuses = [
-  { id: 1, name: "Karachi" },
-  { id: 2, name: "Lahore" },
-  { id: 3, name: "Islamabad" },
-  { id: 4, name: "Peshawar" },
-];
-
-const campusList = campuses && campuses.length > 0 ? campuses : mockCampuses;
 
 const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,19 +34,12 @@ const [formData, setFormData] = useState({
       setFormData((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-    useEffect(() => {
-      if (!campuses || campuses.length === 0) {
-        dispatch(fetchAllCampuses());
-      }
-    }, [dispatch, campuses]);
-
     const handleSubmit = async () => {
-  const effectiveCampus = isCoordinator ? campusName || "" : formData.campus;
   if (
     !formData.dedicationDate ||
     !formData.childName ||
     !formData.parentName ||
-    !effectiveCampus ||
+    !formData.campus ||
     !formData.minister
   ) {
     notify.error("Please fill in all required fields");
@@ -76,7 +52,7 @@ const [formData, setFormData] = useState({
     childName: formData.childName,
     dedicationDate: formData.dedicationDate,
     parentName: formData.parentName,
-    campus: effectiveCampus,
+    campus: formData.campus,
     minister: formData.minister,
   };
 
@@ -85,7 +61,7 @@ const [formData, setFormData] = useState({
 
   if (result.meta.requestStatus === "fulfilled") {
     notify.success("Child dedication certificate created successfully.");
-    navigate("/admin/child/certificate", { state: { certificate: result.payload } });
+    navigate(rolePath("/admin/child/certificate"), { state: { certificate: result.payload } });
   } else {
     notify.error(result.payload?.message || "Failed to create certificate");
   }
@@ -152,7 +128,7 @@ const [formData, setFormData] = useState({
             {/* New Report */}
   <Button
     startIcon={<Plus size={18} />}
-    onClick={() => navigate("/admin/power-portal/child/createForm")}
+    onClick={() => navigate(rolePath("/admin/power-portal/child/createForm"))}
     sx={{
       backgroundColor: "#011A5A",
       color: "#FFFFFF",
@@ -328,58 +304,28 @@ const [formData, setFormData] = useState({
     Campus *
   </Typography>
 
-  {isCoordinator ? (
-    <TextField
-      fullWidth
-      value={campusName || ""}
-      disabled
-      variant="outlined"
-      placeholder={campusName ? "" : "No campus assigned yet"}
-      InputProps={{
-        sx: {
-          bgcolor: "#EDEDF0",
-          borderRadius: "8px",
-          "& fieldset": {
-            borderColor: "transparent",
-          },
-        },
-      }}
-    />
-  ) : (
-  <FormControl fullWidth>
-    <Select
-      displayEmpty
-      value={formData.campus}
-      onChange={handleChange("campus")}
-      renderValue={(selected) =>
-        selected ? selected : "Select campus"
-      }
-      sx={{
+  <TextField
+    fullWidth
+    variant="outlined"
+    placeholder="Enter Campus"
+    value={formData.campus}
+    onChange={handleChange("campus")}
+    InputProps={{
+      sx: {
         bgcolor: "#F3F3F5",
         borderRadius: "8px",
-
         "& fieldset": {
           borderColor: "transparent",
         },
-
-        "& .MuiSelect-select": {
-          color: formData.campus ? "#0A0A0A" : "#717182",
+        "& input::placeholder": {
+          color: "#717182",
+          opacity: 1,
           fontSize: "14px",
+          fontWeight: 400,
         },
-      }}
-    >
-      <MenuItem disabled value="">
-        Select campus
-      </MenuItem>
-
-      {campusList?.map((campus) => (
-        <MenuItem key={campus.id} value={campus.name}>
-          {campus.name}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-  )}
+      },
+    }}
+  />
 </Box>
 
 

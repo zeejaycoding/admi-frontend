@@ -8,14 +8,18 @@ import {
   DialogActions,
   TextField,
   CircularProgress,
+  Tab,
+  Tabs,
+  IconButton,
 } from '@mui/material';
 import { DataGrid as MuiDataGrid } from '@mui/x-data-grid';
-import { Download, Search, Flag } from 'lucide-react';
+import { Download, Search, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Button } from '../../ui';
 import { notify } from '../../../services/utils/authUtils';
 import userService from '../../../services/api/userService';
+import usePermissions from '../../../hooks/usePermissions';
 
 const LEADER_LIKE_ROLES = new Set([
   'COORDINATOR',
@@ -49,6 +53,16 @@ const PersonnelAndLeaderManagement = () => {
   const [tagTarget, setTagTarget] = useState(null);
   const [tagReason, setTagReason] = useState('');
   const [savingTag, setSavingTag] = useState(false);
+
+  // Admin review drawer
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [reviewPerson, setReviewPerson] = useState(null);
+  const [records, setRecords] = useState({ travelForms: [], childDedications: [], marriageCertificates: [], reports: [] });
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [subTab, setSubTab] = useState(0);
+  const [showTaggedOnly, setShowTaggedOnly] = useState(false);
+
+  const { isAdmin } = usePermissions();
 
   const computeRoleLabel = (user) => {
     const roles = user?.roles || user?.authorities || [];
@@ -123,13 +137,14 @@ const PersonnelAndLeaderManagement = () => {
 
   const filteredRows = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter((r) =>
-      [r.fullName, r.memberId, r.role, r.campus, r.status, r.email]
+    return rows.filter((r) => {
+      if (showTaggedOnly && !r.flagged) return false;
+      if (!term) return true;
+      return [r.fullName, r.memberId, r.role, r.campus, r.status, r.email]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(term)),
-    );
-  }, [rows, searchTerm]);
+        .some((v) => String(v).toLowerCase().includes(term));
+    });
+  }, [rows, searchTerm, showTaggedOnly]);
 
   const handleExportPDF = () => {
     if (filteredRows.length === 0) {
@@ -241,6 +256,67 @@ const PersonnelAndLeaderManagement = () => {
       setSavingTag(false);
     }
   };
+
+  const loadRecords = useCallback(async (person) => {
+    if (!person) return;
+    setRecordsLoading(true);
+    try {
+      const res = await userService.getPersonnelRecords(person.id);
+      const data = res?.data?.data ?? res?.data ?? res ?? {};
+      setRecords({
+        travelForms: data.travelForms || [],
+        childDedications: data.childDedications || [],
+        marriageCertificates: data.marriageCertificates || [],
+        reports: data.reports || [],
+      });
+    } catch (err) {
+      notify.error('Failed to load personnel records.');
+    } finally {
+      setRecordsLoading(false);
+    }
+  }, []);
+
+  const openReviewDrawer = (row) => {
+    setReviewPerson(row);
+    setSubTab(0);
+    setRecords({ travelForms: [], childDedications: [], marriageCertificates: [], reports: [] });
+    setReviewDrawerOpen(true);
+    loadRecords(row);
+  };
+
+  const closeReviewDrawer = () => {
+    setReviewDrawerOpen(false);
+    setReviewPerson(null);
+  };
+
+  const handleUntag = async () => {
+    if (!reviewPerson) return;
+    setRecordsLoading(true);
+    try {
+      await userService.clearReviewTag(reviewPerson.id);
+      notify.success('Personnel record untagged.');
+      setReviewDrawerOpen(false);
+      setReviewPerson(null);
+      loadUsers();
+    } catch (err) {
+      notify.error('Failed to clear the review tag.');
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  const handleKeepTag = () => {
+    notify.success('Personnel record kept tagged for review.');
+    setReviewDrawerOpen(false);
+    setReviewPerson(null);
+  };
+
+  const REVIEW_TABS = [
+    { key: 'travel', label: 'Travel', data: records.travelForms },
+    { key: 'child', label: 'Child', data: records.childDedications },
+    { key: 'marriage', label: 'Marriage', data: records.marriageCertificates },
+    { key: 'report', label: 'Reports', data: records.reports },
+  ];
 
   const statCards = [
     { title: 'Total Personnel', value: stats.total, color: '#0A0A0A' },
@@ -357,7 +433,11 @@ const PersonnelAndLeaderManagement = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
           <Button
             variant="contained"
-            onClick={() => openReview(params.row)}
+            onClick={() =>
+              isAdmin && params.row.flagged
+                ? openReviewDrawer(params.row)
+                : openReview(params.row)
+            }
             sx={{
               backgroundColor: '#FFFFFF',
               color: '#111827',
@@ -492,7 +572,7 @@ const PersonnelAndLeaderManagement = () => {
       </div>
 
       <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -504,6 +584,24 @@ const PersonnelAndLeaderManagement = () => {
               style={{ fontFamily: 'Inter, sans-serif' }}
             />
           </div>
+          <Button
+            variant={showTaggedOnly ? 'contained' : 'outlined'}
+            onClick={() => setShowTaggedOnly((v) => !v)}
+            sx={{
+              backgroundColor: showTaggedOnly ? '#F54900' : '#FFFFFF',
+              color: showTaggedOnly ? '#FFFFFF' : '#374151',
+              borderColor: '#E5E7EB',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontFamily: 'Inter, sans-serif',
+              borderRadius: '8px',
+              minHeight: '40px',
+              px: 3,
+              '&:hover': { backgroundColor: showTaggedOnly ? '#E04300' : '#F9FAFB' },
+            }}
+          >
+            Tagged for Review ({stats.tagged})
+          </Button>
         </div>
       </div>
 
@@ -686,19 +784,31 @@ const PersonnelAndLeaderManagement = () => {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 2 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 3,
+            pt: 2,
+            gap: 2,
+            borderTop: '1px solid #F3F4F6',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
           <Button
             variant="outlined"
             onClick={closeTag}
             sx={{
               borderColor: '#E5E7EB',
-              color: '#504F4F',
+              backgroundColor: '#FFFFFF',
+              color: '#374151',
               fontWeight: 600,
               textTransform: 'none',
               fontFamily: 'Inter, sans-serif',
               borderRadius: '8px',
+              minWidth: '100px',
+              minHeight: '40px',
               px: 3,
-              py: 1,
               '&:hover': { borderColor: '#CBD5E1', backgroundColor: '#F9FAFB' },
             }}
           >
@@ -706,9 +816,8 @@ const PersonnelAndLeaderManagement = () => {
           </Button>
           <Button
             variant="contained"
-            startIcon={<Flag size={16} color="#FFFFFF" />}
             onClick={handleTag}
-            disabled={savingTag}
+            disabled={savingTag || !tagReason.trim()}
             sx={{
               backgroundColor: '#F54900',
               color: '#FFFFFF',
@@ -716,12 +825,220 @@ const PersonnelAndLeaderManagement = () => {
               textTransform: 'none',
               fontFamily: 'Inter, sans-serif',
               borderRadius: '8px',
+              minWidth: '140px',
+              minHeight: '40px',
               px: 3,
-              py: 1,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
               '&:hover': { backgroundColor: '#E04300' },
+              '&.Mui-disabled': {
+                backgroundColor: '#FCA5A5',
+                color: '#FFFFFF',
+              },
             }}
           >
             {savingTag ? 'Tagging...' : 'Tag for Review'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Admin review drawer */}
+      <Dialog
+        open={reviewDrawerOpen}
+        onClose={closeReviewDrawer}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{ sx: { borderRadius: 3, boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.15)' } }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            pb: 1,
+            pt: 3,
+            px: 3,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '20px', fontWeight: 600, color: '#0A0A0A', fontFamily: 'Inter, sans-serif' }}>
+              {reviewPerson?.fullName || 'Personnel Review'}
+            </div>
+            <div style={{ fontSize: '14px', color: '#717182', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+              {reviewPerson?.memberId || ''} · {reviewPerson?.role || ''}
+            </div>
+          </div>
+          <IconButton onClick={closeReviewDrawer} sx={{ color: '#6B7280' }}>
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 3 }}>
+          {/* Profile summary */}
+          <Box
+            sx={{
+              border: '1px solid #EEF0F4',
+              borderRadius: '12px',
+              p: 2.5,
+              mb: 3,
+              backgroundColor: '#FAFAFB',
+            }}
+          >
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginBottom: 12 }}>
+              Profile
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>Role</div>
+                <div style={{ fontSize: '14px', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{reviewPerson?.role || '—'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>Campus</div>
+                <div style={{ fontSize: '14px', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{reviewPerson?.campus || '—'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>Date of Appointment</div>
+                <div style={{ fontSize: '14px', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{reviewPerson?.appointment || '—'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>Status</div>
+                <div style={{ fontSize: '14px', color: reviewPerson?.flagged ? '#F54900' : '#0A0A0A', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                  {reviewPerson?.status || '—'}
+                </div>
+              </div>
+              <div className="col-span-2 sm:col-span-2">
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>Reason for Tagging</div>
+                <div style={{ fontSize: '14px', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                  {reviewPerson?.reviewReason || '—'}
+                </div>
+              </div>
+            </div>
+          </Box>
+
+          {/* Submissions */}
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0A', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>
+            Submissions
+          </div>
+          <Tabs
+            value={subTab}
+            onChange={(_, v) => setSubTab(v)}
+            sx={{
+              '& .MuiTab-root': {
+                fontFamily: 'Inter, sans-serif',
+                textTransform: 'none',
+                fontSize: '14px',
+                fontWeight: 600,
+                minHeight: '44px',
+              },
+              '& .Mui-selected': { color: '#011A5A' },
+              '& .MuiTabs-indicator': { backgroundColor: '#011A5A' },
+            }}
+          >
+            {REVIEW_TABS.map((t) => (
+              <Tab key={t.key} label={`${t.label} (${t.data.length})`} />
+            ))}
+          </Tabs>
+
+          <Box sx={{ mt: 2, mb: 1, border: '1px solid #EEF0F4', borderRadius: '10px', minHeight: 180 }}>
+            {recordsLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+                <CircularProgress size={30} sx={{ color: '#003999' }} />
+              </Box>
+            ) : REVIEW_TABS[subTab].data.length === 0 ? (
+              <Box sx={{ py: 8, textAlign: 'center', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', fontSize: '14px' }}>
+                No {REVIEW_TABS[subTab].label.toLowerCase()} submissions found.
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
+                {REVIEW_TABS[subTab].data.map((item) => (
+                  <Box
+                    key={`${item.type}-${item.id}`}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      px: 2.5,
+                      py: 2,
+                      borderBottom: '1px solid #F3F4F6',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#0A0A0A', fontFamily: 'Inter, sans-serif' }}>
+                        {item.title || '—'}
+                      </div>
+                      {item.subtitle ? (
+                        <div style={{ fontSize: '13px', color: '#6A7282', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                          {item.subtitle}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Chip
+                      label={item.status || '—'}
+                      size="small"
+                      sx={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        borderRadius: '6px',
+                        backgroundColor: item.status === 'Approved' ? '#E8F7EF' : item.status === 'Pending' ? '#FFF7E6' : '#F3F4F6',
+                        color: item.status === 'Approved' ? '#00A63E' : item.status === 'Pending' ? '#B7791F' : '#4A5565',
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 3,
+            pt: 2,
+            gap: 2,
+            borderTop: '1px solid #F3F4F6',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={handleKeepTag}
+            sx={{
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              color: '#374151',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontFamily: 'Inter, sans-serif',
+              borderRadius: '8px',
+              minWidth: '120px',
+              minHeight: '40px',
+              px: 3,
+              '&:hover': { borderColor: '#CBD5E1', backgroundColor: '#F9FAFB' },
+            }}
+          >
+            Keep Tagged
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleUntag}
+            disabled={recordsLoading}
+            sx={{
+              backgroundColor: '#F54900',
+              color: '#FFFFFF',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontFamily: 'Inter, sans-serif',
+              borderRadius: '8px',
+              minWidth: '120px',
+              minHeight: '40px',
+              px: 3,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+              '&:hover': { backgroundColor: '#E04300' },
+            }}
+          >
+            Untag & Close
           </Button>
         </DialogActions>
       </Dialog>

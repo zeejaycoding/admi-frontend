@@ -36,11 +36,13 @@ import { notify } from "../../../services/utils/authUtils";
 import EventCreate from "../../events/admin/EventCreate";
 import EventEdit from "../../events/admin/EventEdit";
 import { useNavigate } from "react-router-dom";
+import useRoleBase from "../../../hooks/useRoleBase";
 import { formatAmount, getCurrencyByCode } from "../../../constants/currencies";
 
 const EventManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredEvents, setFilteredEvents] = useState([]);
   const { events, analytics, isLoading, error } = useSelector((state) => state.event);
@@ -154,7 +156,7 @@ const EventManagement = () => {
   };
 
   const handleRowClick = (params) => {
-    navigate(`/admin/events/${params.row.id}`, {
+    navigate(rolePath(`/admin/events/${params.row.id}`), {
       state: { event: params.row },
     });
   };

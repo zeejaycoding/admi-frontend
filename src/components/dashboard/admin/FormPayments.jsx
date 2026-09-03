@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
+import useRoleBase from '../../../hooks/useRoleBase';
 import {
   Box,
   Typography,
@@ -62,6 +63,7 @@ const statusColor = (status) => {
 const FormPayments = () => {
   const dispatch   = useDispatch();
   const navigate   = useNavigate();
+  const { rolePath } = useRoleBase();
   const { formId } = useParams();
 
   const { submissions, isLoading } = useSelector((s) => s.formSubmission);
@@ -329,7 +331,7 @@ const FormPayments = () => {
           <Button
             variant="contained"
             startIcon={<ArrowLeft size={18} />}
-            onClick={() => navigate('/admin/forms')}
+            onClick={() => navigate(rolePath('/admin/forms'))}
             size="small"
             sx={{ backgroundColor: '#6b7280', color: 'white', borderRadius: 2, fontWeight: 600,
               textTransform: 'none', '&:hover': { backgroundColor: '#4b5563' } }}

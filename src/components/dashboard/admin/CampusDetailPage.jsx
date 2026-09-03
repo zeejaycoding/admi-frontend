@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useRoleBase from '../../../hooks/useRoleBase';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Download,
@@ -56,6 +57,7 @@ import campusService from '../../../services/api/campusService';
 const CampusDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const dispatch = useDispatch();
   const { currentCampus, isLoading, error } = useSelector(
     (state) => state.campus
@@ -379,7 +381,7 @@ const CampusDetailPage = () => {
           <Button
             variant="contained"
             startIcon={<ArrowLeft size={18} />}
-            onClick={() => navigate('/admin/campus-management')}
+            onClick={() => navigate(rolePath('/admin/campus-management'))}
             sx={{
               backgroundColor: '#003999',
               color: 'white',
@@ -405,7 +407,7 @@ const CampusDetailPage = () => {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <button
-              onClick={() => navigate('/admin/campus-management')}
+            onClick={() => navigate(rolePath('/admin/campus-management'))}
               className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ArrowLeft size={20} color="#6B7280" />

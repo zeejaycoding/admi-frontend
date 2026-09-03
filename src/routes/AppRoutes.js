@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import NonCoordinatorRoute from '../components/auth/NonCoordinatorRoute';
@@ -41,6 +41,7 @@ import PersonnelAndLeaderManagement from '../components/dashboard/admin/Personne
 import NationalLeaderReportAnalytics from '../components/dashboard/admin/NationalLeaderReportAnalytics';
 import CampusManagementDashboard from '../components/dashboard/admin/CampusManagementDashboard';
 import CampusDetailPage from '../components/dashboard/admin/CampusDetailPage';
+import RegionalCommunications from '../components/dashboard/admin/RegionalCommunications';
 import { useRegion } from '../context/RegionContext';
 
 const USAHomePage = lazy(() => import('../pages/regions/usa/USAHomePage'));
@@ -82,7 +83,18 @@ const DiscipleshipHonorOfferingPage = lazy(() => import('../pages/DiscipleshipHo
 const AppRoutes = () => {
   const { selectedRegion } = useRegion();
   const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
   const isNL = Array.isArray(user?.roles) && user.roles.includes('NATIONAL_LEADER');
+
+  const roleList = (Array.isArray(user?.roles) ? user.roles : user?.roles ? [user.roles] : [])
+    .concat(Array.isArray(user?.authorities) ? user.authorities : []);
+  const hasNL = roleList.some((r) => r === 'NATIONAL_LEADER' || r?.name === 'NATIONAL_LEADER' || r?.role === 'NATIONAL_LEADER');
+  const hasCoordinator = roleList.some((r) => r === 'COORDINATOR' || r?.name === 'COORDINATOR' || r?.role === 'COORDINATOR');
+
+  // Determine the user's own URL base so old /admin/* URLs can redirect to the
+  // role-appropriate prefix.
+  const roleBase = hasNL ? '/national-leader' : hasCoordinator ? '/coordinator' : '/admin';
+  const redirectTo = (adminPath) => (adminPath.startsWith('/admin') ? roleBase + adminPath.slice('/admin'.length) : adminPath);
 
   // Memoized home component based on current region from context
   const HomeComponent = useMemo(() => {
@@ -161,9 +173,13 @@ const AppRoutes = () => {
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'COORDINATOR', 'NATIONAL_LEADER']}>
-              <AdminLayout />
-            </ProtectedRoute>
+            hasCoordinator || hasNL
+              ? <Navigate to={redirectTo(location.pathname)} replace />
+              : (
+                <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'COORDINATOR', 'NATIONAL_LEADER']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              )
           }
         >
           <Route
@@ -172,7 +188,7 @@ const AppRoutes = () => {
               isNL
                 ? <Navigate to="/admin/national-leader" replace />
                 : (
-                  <NonCoordinatorRoute>
+                  <NonCoordinatorRoute redirectTo="/admin/reports">
                     <AdminDashboard />
                   </NonCoordinatorRoute>
                 )
@@ -197,8 +213,16 @@ const AppRoutes = () => {
           <Route
             path="national-reports-analytics"
             element={
-              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+              <ProtectedRoute roles={['NATIONAL_LEADER']}>
                 <NationalLeaderReportAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="regional-communications"
+            element={
+              <ProtectedRoute roles={['NATIONAL_LEADER']}>
+                <RegionalCommunications />
               </ProtectedRoute>
             }
           />
@@ -384,6 +408,176 @@ const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
+        </Route>
+
+        <Route
+          path="/coordinator/*"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'COORDINATOR', 'NATIONAL_LEADER']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
+              !hasCoordinator
+                ? <Navigate to={redirectTo('/admin')} replace />
+                : (
+                  <NonCoordinatorRoute redirectTo="/coordinator/reports">
+                    <AdminDashboard />
+                  </NonCoordinatorRoute>
+                )
+            }
+          />
+          <Route path="reports" element={<ReportManagement />} />
+          <Route path="reports/create" element={<ReportCreate />} />
+          <Route path="reports/:id" element={<ReportDetail />} />
+          <Route path="travel" element={<TravellingForm />} />
+          <Route path="power-portal/travelling/createForm" element={<TravellingFormCreate />} />
+          <Route path="travel/:id" element={<TravelDetailForm />} />
+          <Route path="child" element={<ChildForm />} />
+          <Route path="child/:id" element={<ChildDetailForm />} />
+          <Route path="power-portal/child/createForm" element={<ChildFormCreate />} />
+          <Route path="child/certificate" element={<ChildCertificate />} />
+          <Route path="marriage" element={<MarriageForm />} />
+          <Route path="power-portal/marriage/createForm" element={<MarriageFormCreate />} />
+          <Route path="powerportal" element={<PowerPortalManagement />} />
+          <Route
+            path="coordinator-chat"
+            element={
+              <ProtectedRoute roles={['COORDINATOR']}>
+                <CoordinatorChat />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+
+        <Route
+          path="/national-leader/*"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
+              isNL
+                ? <Navigate to="/national-leader/national-leader" replace />
+                : <Navigate to="/admin" replace />
+            }
+          />
+          <Route
+            path="national-leader"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <NationalLeaderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="personnel-leaders"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <PersonnelAndLeaderManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="national-reports-analytics"
+            element={
+              <ProtectedRoute roles={['NATIONAL_LEADER']}>
+                <NationalLeaderReportAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="regional-communications"
+            element={
+              <ProtectedRoute roles={['NATIONAL_LEADER']}>
+                <RegionalCommunications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="campuses"
+            element={
+              <NonCoordinatorRoute>
+                <CampusManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="campus-management"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <CampusManagementDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="campus-management/:id"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'NATIONAL_LEADER']}>
+                <CampusDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="events"
+            element={
+              <NonCoordinatorRoute>
+                <EventManagement />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="events/:id"
+            element={
+              <NonCoordinatorRoute>
+                <EventDetail />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route path="powerportal" element={<PowerPortalManagement />} />
+          <Route path="travel" element={<TravellingForm />} />
+          <Route path="power-portal/travelling/createForm" element={<TravellingFormCreate />} />
+          <Route path="travel/:id" element={<TravelDetailForm />} />
+          <Route path="child" element={<ChildForm />} />
+          <Route path="child/:id" element={<ChildDetailForm />} />
+          <Route path="power-portal/child/createForm" element={<ChildFormCreate />} />
+          <Route path="child/certificate" element={<ChildCertificate />} />
+          <Route path="marriage" element={<MarriageForm />} />
+          <Route path="power-portal/marriage/createForm" element={<MarriageFormCreate />} />
+          <Route path="reports" element={<ReportManagement />} />
+          <Route path="reports/create" element={<ReportCreate />} />
+          <Route path="reports/:id" element={<ReportDetail />} />
+          <Route
+            path="power-bible-school"
+            element={
+              <NonCoordinatorRoute>
+                <PowerBibleSchoolRegistrations />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="discipleship-program"
+            element={
+              <NonCoordinatorRoute>
+                <DiscipleshipProgramRegistrations />
+              </NonCoordinatorRoute>
+            }
+          />
+          <Route
+            path="other-programmes"
+            element={
+              <NonCoordinatorRoute>
+                <OtherProgrammeRegistrations />
+              </NonCoordinatorRoute>
+            }
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

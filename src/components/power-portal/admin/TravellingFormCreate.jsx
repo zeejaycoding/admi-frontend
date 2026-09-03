@@ -13,13 +13,13 @@ import { Button } from "../../ui";
 import { createTravelForm, clearSuccess } from "../../../store/slices/travelFormSlice";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
-import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
+import useRoleBase from "../../../hooks/useRoleBase";
 
 const TravellingFormCreate = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { rolePath } = useRoleBase();
     const { isLoading, success } = useSelector((state) => state.travelForm);
-    const { isCoordinator, campusName } = useCoordinatorCampus();
     const [formData, setFormData] = useState({
       country: "",
       travelDate: "",
@@ -44,12 +44,12 @@ const TravellingFormCreate = () => {
         days: parseInt(formData.days, 10),
         reason: formData.reason,
         returnDate: formData.returnDate,
-        campus: isCoordinator ? campusName || "" : formData.campus,
+        campus: formData.campus,
       };
       const result = await dispatch(createTravelForm(payload));
       if (result.meta.requestStatus === "fulfilled") {
         notify.success("Travel form submitted successfully");
-        navigate("/admin/travel");
+        navigate(rolePath("/admin/travel"));
       } else {
         notify.error(result.payload?.message || "Failed to submit travel form");
       }
@@ -118,7 +118,7 @@ const TravellingFormCreate = () => {
             {/* New Report */}
   <Button
     startIcon={<Plus size={18} />}
-    onClick={() => navigate("/admin/power-portal/travelling/createForm")}
+    onClick={() => navigate(rolePath("/admin/power-portal/travelling/createForm"))}
     sx={{
       backgroundColor: "#011A5A",
       color: "#FFFFFF",
@@ -211,20 +211,18 @@ const TravellingFormCreate = () => {
           mb: 1,
         }}
       >
-        Campus {isCoordinator ? "" : "*"}
+        Campus *
       </Typography>
 
       <TextField
         fullWidth
-        placeholder={isCoordinator ? (campusName || "No campus assigned yet") : "Enter Campus"}
+        placeholder="Enter Campus"
         variant="outlined"
-        value={isCoordinator ? campusName || "" : formData.campus}
+        value={formData.campus}
         onChange={handleChange("campus")}
-        disabled={isCoordinator}
         InputProps={{
-          readOnly: isCoordinator,
           sx: {
-            bgcolor: isCoordinator ? "#EDEDF0" : "#F3F3F5",
+            bgcolor: "#F3F3F5",
             borderRadius: "8px",
             "& fieldset": {
               borderColor: "transparent",

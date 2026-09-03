@@ -10,10 +10,11 @@ import {
 } from "@mui/material";
 import { Plus, Edit, Trash2, MapPin, Search, CheckCircle2, XCircle } from "lucide-react";
 
-import { DataGrid, Button } from "../../ui";
+import { DataGrid, Button, BulkActionsBar } from "../../ui";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
+import useRoleBase from "../../../hooks/useRoleBase";
 import {
   fetchAllCertificates,
   deleteCertificate,
@@ -23,6 +24,7 @@ import {
 const MarriageForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const [searchTerm, setSearchTerm] = useState("");
   const currentUser = useSelector((state) => state.auth?.user);
   const [actionId, setActionId] = useState(null);
@@ -34,6 +36,8 @@ const MarriageForm = () => {
   const [formToDelete, setFormToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [selectionModel, setSelectionModel] = useState({ type: 'include', ids: new Set() });
+  const [bulkAction, setBulkAction] = useState(null);
 
   const rawRoles = currentUser?.roles || currentUser?.authorities || [];
   const roles = rawRoles.map((r) => (typeof r === "string" ? r : r?.name || r?.role || "")).filter(Boolean);
@@ -137,6 +141,44 @@ const MarriageForm = () => {
     return filtered.slice(startIndex, startIndex + pageSize);
   }, [filtered, page, pageSize]);
 
+  const selectAllActive = selectionModel.type === "exclude";
+  const selectedIds = selectionModel.ids;
+  const selectedCertificates = selectAllActive
+    ? filtered
+    : filtered.filter((c) => selectedIds.has(c.id));
+
+  const pendingSelected = selectedCertificates.filter(
+    (c) => (c.status || "").toLowerCase() !== "approved" &&
+           (c.status || "").toLowerCase() !== "rejected",
+  );
+
+  const handleBulkAction = async (status) => {
+    if (pendingSelected.length === 0) {
+      notify.error("None of the selected certificates are pending approval.");
+      return;
+    }
+    setBulkAction(status === "Approved" ? "approve" : "reject");
+    let successCount = 0;
+    let failCount = 0;
+    for (const cert of pendingSelected) {
+      try {
+        await dispatch(updateMarriageStatus({ id: cert.id, status })).unwrap();
+        successCount += 1;
+      } catch {
+        failCount += 1;
+      }
+    }
+    setBulkAction(null);
+    setSelectionModel({ type: 'include', ids: new Set() });
+    dispatch(fetchAllCertificates());
+    if (successCount > 0) {
+      notify.success(`${successCount} certificate(s) ${status.toLowerCase()}.`);
+    }
+    if (failCount > 0) {
+      notify.error(`${failCount} certificate(s) failed to update.`);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -196,7 +238,7 @@ const MarriageForm = () => {
           {/* New Report */}
           <Button
             startIcon={<Plus size={18} />}
-            onClick={() => navigate("/admin/power-portal/marriage/createForm")}
+            onClick={() => navigate(rolePath("/admin/power-portal/marriage/createForm"))}
             sx={{
               backgroundColor: "#011A5A",
               color: "#FFFFFF",
@@ -369,6 +411,21 @@ const MarriageForm = () => {
         />
       </Box>
 
+      {/* Bulk Actions */}
+      {canManage && selectedCertificates.length > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedCertificates.length}
+          pendingCount={pendingSelected.length}
+          itemLabel="certificates"
+          loading={!!bulkAction}
+          approving={bulkAction === "approve"}
+          rejecting={bulkAction === "reject"}
+          onApprove={() => handleBulkAction("Approved")}
+          onReject={() => handleBulkAction("Rejected")}
+          onClear={() => setSelectionModel({ type: 'include', ids: new Set() })}
+        />
+      )}
+
       {/* reports DataGrid */}
       <Paper
         elevation={2}
@@ -385,6 +442,14 @@ const MarriageForm = () => {
           getRowId={(row) => row.id}
           rowCount={filtered.length}
           paginationMode="client"
+          {...(canManage
+            ? {
+                checkboxSelection: true,
+                disableRowSelectionOnClick: true,
+                rowSelectionModel: selectionModel,
+                onRowSelectionModelChange: (ids) => setSelectionModel(ids),
+              }
+            : {})}
           columns={[
             {
               field: "certificateNumber",
@@ -549,10 +614,15 @@ const MarriageForm = () => {
           ]}
           loading={isLoading}
           pagination
-          page={page}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={(model) => {
+            if (model.pageSize !== pageSize) {
+              setPageSize(model.pageSize);
+              setPage(0);
+            } else {
+              setPage(model.page);
+            }
+          }}
           rowsPerPageOptions={[10, 25, 50, 100]}
           sx={{
             height: 650,

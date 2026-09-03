@@ -13,18 +13,21 @@ import {
   MapPin,
 } from "lucide-react";
 
-import { DataGrid, Button } from "../../ui";
+import { DataGrid, Button, BulkActionsBar } from "../../ui";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 import {
   fetchAllTravelForms,
   deleteTravelForm,
+  updateTravelFormStatus,
 } from "../../../store/slices/travelFormSlice";
 import { notify } from "../../../services/utils/authUtils";
 import { useNavigate } from "react-router-dom";
+import useRoleBase from "../../../hooks/useRoleBase";
 
 const TravellingForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const currentUser = useSelector((state) => state.auth?.user);
   const roles = (currentUser?.roles || currentUser?.authorities || [])
     .map((r) => (typeof r === "string" ? r : r?.name || r?.role || ""))
@@ -40,6 +43,8 @@ const TravellingForm = () => {
   const [formToDelete, setFormToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [selectionModel, setSelectionModel] = useState({ type: 'include', ids: new Set() });
+  const [bulkAction, setBulkAction] = useState(null);
 
   useEffect(() => {
     dispatch(fetchAllTravelForms());
@@ -69,9 +74,47 @@ const TravellingForm = () => {
   };
 
   const handleRowClick = (params) => {
-    navigate(`/admin/travel/${params.row.id}`, {
+    navigate(rolePath(`/admin/travel/${params.row.id}`), {
       state: { travelForm: params.row },
     });
+  };
+
+  const selectAllActive = selectionModel.type === "exclude";
+  const selectedIds = selectionModel.ids;
+  const selectedForms = selectAllActive
+    ? filtered
+    : filtered.filter((f) => selectedIds.has(f.id));
+
+  const pendingSelected = selectedForms.filter(
+    (f) => (f.status || "").toLowerCase() !== "approved" &&
+           (f.status || "").toLowerCase() !== "rejected",
+  );
+
+  const handleBulkAction = async (status) => {
+    if (pendingSelected.length === 0) {
+      notify.error("None of the selected forms are pending approval.");
+      return;
+    }
+    setBulkAction(status === "Approved" ? "approve" : "reject");
+    let successCount = 0;
+    let failCount = 0;
+    for (const form of pendingSelected) {
+      try {
+        await dispatch(updateTravelFormStatus({ id: form.id, status })).unwrap();
+        successCount += 1;
+      } catch {
+        failCount += 1;
+      }
+    }
+    setBulkAction(null);
+    setSelectionModel({ type: 'include', ids: new Set() });
+    dispatch(fetchAllTravelForms());
+    if (successCount > 0) {
+      notify.success(`${successCount} form(s) ${status.toLowerCase()}.`);
+    }
+    if (failCount > 0) {
+      notify.error(`${failCount} form(s) failed to update.`);
+    }
   };
 
   const handleDeleteForm = (form) => {
@@ -152,7 +195,7 @@ const TravellingForm = () => {
           {/* New Report */}
 <Button
   startIcon={<Plus size={18} />}
-  onClick={() => navigate("/admin/power-portal/travelling/createForm")}
+  onClick={() => navigate(rolePath("/admin/power-portal/travelling/createForm"))}
   sx={{
     backgroundColor: "#011A5A",
     color: "#FFFFFF",
@@ -172,6 +215,21 @@ const TravellingForm = () => {
 
         </Box>
       </Box>
+
+      {/* Bulk Actions */}
+      {canManage && selectedForms.length > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedForms.length}
+          pendingCount={pendingSelected.length}
+          itemLabel="forms"
+          loading={!!bulkAction}
+          approving={bulkAction === "approve"}
+          rejecting={bulkAction === "reject"}
+          onApprove={() => handleBulkAction("Approved")}
+          onReject={() => handleBulkAction("Rejected")}
+          onClear={() => setSelectionModel({ type: 'include', ids: new Set() })}
+        />
+      )}
 
       {/* reports DataGrid */}
       <Box sx={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
@@ -193,6 +251,14 @@ const TravellingForm = () => {
           rowCount={filtered.length}
 
           paginationMode="client"
+          {...(canManage
+            ? {
+                checkboxSelection: true,
+                disableRowSelectionOnClick: true,
+                rowSelectionModel: selectionModel,
+                onRowSelectionModelChange: (ids) => setSelectionModel(ids),
+              }
+            : {})}
          columns={[
   {
     field: "id",
@@ -364,10 +430,15 @@ const TravellingForm = () => {
 ]}
           loading={isLoading}
           pagination
-          page={page}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={(model) => {
+            if (model.pageSize !== pageSize) {
+              setPageSize(model.pageSize);
+              setPage(0);
+            } else {
+              setPage(model.page);
+            }
+          }}
           rowsPerPageOptions={[10, 25, 50, 100]}
 sx={{
   height: 650,

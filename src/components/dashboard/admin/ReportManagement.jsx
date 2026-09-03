@@ -31,11 +31,12 @@ import {
   Download,
 } from "lucide-react";
 
-import { DataGrid, Button, StatsCard } from "../../ui";
+import { DataGrid, Button, StatsCard, BulkActionsBar } from "../../ui";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 import {
   fetchAllReports,
   deleteReport,
+  updateReportStatus,
   clearError,
   clearSuccess,
   getReportAnalytics,
@@ -46,10 +47,17 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { getCurrencyByCode, DEFAULT_CURRENCY } from "../../../constants/currencies";
+import useRoleBase from "../../../hooks/useRoleBase";
 
 const ReportManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
+  const currentUser = useSelector((state) => state.auth?.user);
+  const roles = (currentUser?.roles || currentUser?.authorities || [])
+    .map((r) => (typeof r === "string" ? r : r?.name || r?.role || ""))
+    .filter(Boolean);
+  const canManage = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredEvents, setFilteredEvents] = useState([]);
   const { reports, analytics, isLoading, error } = useSelector(
@@ -63,6 +71,8 @@ const ReportManagement = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectionModel, setSelectionModel] = useState({ type: 'include', ids: new Set() });
+  const [bulkAction, setBulkAction] = useState(null);
 
   const handleExportExcel = () => {
     const exportData = filteredEvents.map((report) => {
@@ -227,7 +237,7 @@ const ReportManagement = () => {
   };
 
   const handleRowClick = (params) => {
-    navigate(`/admin/reports/${params.row.id}`, {
+    navigate(rolePath(`/admin/reports/${params.row.id}`), {
       state: { report: params.row },
     });
   };
@@ -235,6 +245,45 @@ const ReportManagement = () => {
     const startIndex = page * pageSize;
     return filteredEvents.slice(startIndex, startIndex + pageSize);
   }, [filteredEvents, page, pageSize]);
+
+  const selectAllActive = selectionModel.type === "exclude";
+  const selectedIds = selectionModel.ids;
+  const selectedReports = selectAllActive
+    ? filteredEvents
+    : filteredEvents.filter((r) => selectedIds.has(r.id));
+  const pendingSelected = selectedReports.filter(
+    (r) => (r.status || "").toLowerCase() !== "approved" &&
+           (r.status || "").toLowerCase() !== "rejected",
+  );
+
+  const handleBulkAction = async (status) => {
+    const pending = pendingSelected;
+    if (pending.length === 0) {
+      notify.error("None of the selected reports are pending approval.");
+      return;
+    }
+    setBulkAction(status === "Approved" ? "approve" : "reject");
+    let successCount = 0;
+    let failCount = 0;
+    for (const report of pending) {
+      try {
+        await dispatch(updateReportStatus({ id: report.id, status })).unwrap();
+        successCount += 1;
+      } catch {
+        failCount += 1;
+      }
+    }
+    setBulkAction(null);
+    setSelectionModel({ type: 'include', ids: new Set() });
+    dispatch(fetchAllReports());
+    dispatch(getReportAnalytics());
+    if (successCount > 0) {
+      notify.success(`${successCount} report(s) ${status.toLowerCase()}.`);
+    }
+    if (failCount > 0) {
+      notify.error(`${failCount} report(s) failed to update.`);
+    }
+  };
 
   return (
     <Box
@@ -317,7 +366,7 @@ const ReportManagement = () => {
           {/* New Report */}
 <Button
   startIcon={<Plus size={18} />}
-  onClick={() => navigate("/admin/reports/create")}
+  onClick={() => navigate(rolePath("/admin/reports/create"))}
   sx={{
     backgroundColor: "#011A5A",
     color: "#FFFFFF",
@@ -509,6 +558,21 @@ const ReportManagement = () => {
         })}
       </Box>
 
+      {/* Bulk Actions */}
+      {canManage && selectedReports.length > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedReports.length}
+          pendingCount={pendingSelected.length}
+          itemLabel="reports"
+          loading={!!bulkAction}
+          approving={bulkAction === "approve"}
+          rejecting={bulkAction === "reject"}
+          onApprove={() => handleBulkAction("Approved")}
+          onReject={() => handleBulkAction("Rejected")}
+          onClear={() => setSelectionModel({ type: 'include', ids: new Set() })}
+        />
+      )}
+
       {/* Search and Actions */}
       <Paper
         elevation={1}
@@ -641,6 +705,14 @@ const ReportManagement = () => {
           getRowId={(row) => row.id}
           rowCount={filteredEvents.length}
           paginationMode="client"
+          {...(canManage
+            ? {
+                checkboxSelection: true,
+                disableRowSelectionOnClick: true,
+                rowSelectionModel: selectionModel,
+                onRowSelectionModelChange: (ids) => setSelectionModel(ids),
+              }
+            : {})}
           columns={[
             {
               field: "date",
@@ -891,10 +963,15 @@ const ReportManagement = () => {
           ]}
           loading={isLoading}
           pagination
-          page={page}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={(model) => {
+            if (model.pageSize !== pageSize) {
+              setPageSize(model.pageSize);
+              setPage(0);
+            } else {
+              setPage(model.page);
+            }
+          }}
           rowsPerPageOptions={[10, 25, 50, 100]}
           sx={{
             height: 600,

@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createReport } from "../../../store/slices/reportSlice";
 import { notify } from "../../../services/utils/authUtils";
-import useCoordinatorCampus from "../../../hooks/useCoordinatorCampus";
+import useRoleBase from "../../../hooks/useRoleBase";
 import {
   Box,
   Paper,
@@ -40,6 +40,7 @@ const steps = [
 const AddReport = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const [activeStep, setActiveStep] = useState(0);
   const [nextExpenseId, setNextExpenseId] = useState(6);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -52,8 +53,7 @@ const AddReport = () => {
   const [summary, setSummary] = useState("");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [submitting, setSubmitting] = useState(false);
-  const { isCoordinator, campusName } = useCoordinatorCampus();
-  const effectiveCampus = isCoordinator ? campusName || "" : campus;
+  const effectiveCampus = campus;
 
   useEffect(() => {
     if (activeStep > 0) {
@@ -92,7 +92,7 @@ const AddReport = () => {
 
       await dispatch(createReport({ reportData, files: uploadedFiles })).unwrap();
       notify.success("Report submitted successfully!");
-      navigate("/admin/reports");
+      navigate(rolePath("/admin/reports"));
     } catch (err) {
       notify.error(err.message || "Failed to submit report");
     } finally {
@@ -415,7 +415,6 @@ const formatMoney = (val) => {
                   placeholder="Enter campus name"
                   value={effectiveCampus}
                   onChange={(e) => setCampus(e.target.value)}
-                  disabled={isCoordinator}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">

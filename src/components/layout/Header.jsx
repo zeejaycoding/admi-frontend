@@ -6,6 +6,7 @@ import powercityLogo from '../../assets/Powercity White 1.png';
 import AuthModal from '../auth/AuthModal';
 import { useRegion } from '../../context/RegionContext';
 import useAuth from '../../hooks/useAuth';
+import { roleBaseFor } from '../../utils/roleLinks';
 import { useCart } from '../../context/CartContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
@@ -161,6 +162,7 @@ const Header = () => {
           ? 'Coordinator Panel'
           : 'Admin Panel')
     : 'Admin Panel';
+  const panelLink = roleBaseFor(displayUser?.roles || displayUser?.authorities);
   const initials = displayUser
     ? (displayUser.fullName || '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
     : '';
@@ -324,7 +326,7 @@ const Header = () => {
                         <li>
                           <button
                             className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                            onClick={() => { navigate('/admin'); setIsUserMenuOpen(false); }}
+                            onClick={() => { navigate(panelLink); setIsUserMenuOpen(false); }}
                           >
                             {panelLabel}
                           </button>
@@ -475,7 +477,7 @@ const Header = () => {
                     className={`w-full text-left px-3 py-2 font-medium transition-colors duration-200 ${
                       isScrolled ? 'text-gray-700 hover:text-primary-600' : 'text-white hover:text-yellow-400'
                     }`}
-                    onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}
+                    onClick={() => { navigate(panelLink); setIsMobileMenuOpen(false); }}
                   >
                     {panelLabel}
                   </button>

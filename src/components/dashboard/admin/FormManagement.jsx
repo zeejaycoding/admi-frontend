@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import usePermissions from '../../../hooks/usePermissions';
+import useRoleBase from '../../../hooks/useRoleBase';
 import {
   Box,
   Typography,
@@ -50,6 +51,7 @@ const PAID_MINISTRY_FORM_CODES = [
 const FormManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { rolePath } = useRoleBase();
   const { forms: formsFromState, isLoading, error } = useSelector((state) => state.form);
   const { canManage } = usePermissions();
 
@@ -133,22 +135,22 @@ const FormManagement = () => {
     // Clear success/error state before navigating to prevent stale notifications
     dispatch(clearSuccess());
     dispatch(clearError());
-    navigate('/admin/forms/builder');
+    navigate(rolePath('/admin/forms/builder'));
   };
 
   const handleEditForm = (form) => {
     // Clear success/error state before navigating to prevent stale notifications
     dispatch(clearSuccess());
     dispatch(clearError());
-    navigate(`/admin/forms/builder/${form.id}`);
+    navigate(rolePath(`/admin/forms/builder/${form.id}`));
   };
 
   const handleViewSubmissions = (form) => {
-    navigate(`/admin/forms/${form.id}/submissions`);
+    navigate(rolePath(`/admin/forms/${form.id}/submissions`));
   };
 
   const handleViewPayments = (form) => {
-    navigate(`/admin/forms/${form.id}/payments`);
+    navigate(rolePath(`/admin/forms/${form.id}/payments`));
   };
 
   const handleTogglePublish = async (form) => {

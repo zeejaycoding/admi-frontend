@@ -1,5 +1,6 @@
 export { default as Alert } from './Alert';
 export { default as AudioPlayer } from './AudioPlayer';
+export { default as BulkActionsBar } from './BulkActionsBar';
 export { default as Button } from './Button';
 export { default as Card } from './Card';
 export { default as DataGrid } from './DataGrid';
