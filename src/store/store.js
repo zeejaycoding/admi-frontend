@@ -18,6 +18,8 @@ import childDedicationReducer from './slices/childDedicationSlice';
 import marriageCertificateReducer from './slices/marriageCertificateSlice';
 import reportReducer from './slices/reportSlice';
 import menuPermissionsReducer from './slices/menuPermissionsSlice';
+import announcementReducer from './slices/announcementSlice';
+import notificationReducer from './slices/notificationSlice';
 
 const persistConfig = (key, whitelist) => ({
   key,
@@ -61,6 +63,8 @@ export const store = configureStore({
     marriageCertificate: marriageCertificatePersist,
     report: reportReducer,
     menuPermissions: menuPermissionsReducer,
+    announcement: announcementReducer,
+    notification: notificationReducer,
   },
   middleware: (getDefault) => getDefault({ serializableCheck: false }),
   // SECURITY: Disable Redux DevTools in production to prevent state inspection

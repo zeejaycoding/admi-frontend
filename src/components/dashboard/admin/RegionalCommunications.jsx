@@ -1,21 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, MessageSquare, Bell, Mail, Eye, Trash2, ChevronDown, Megaphone, X, FileText } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import campusService from '../../../services/api/campusService';
-
-const HISTORY_KEY = 'nl_announcement_history';
-
-const loadHistory = () => {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
-const saveHistory = (list) => {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
-};
+import {
+  fetchAllAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
+} from '../../../store/slices/announcementSlice';
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr);
@@ -23,13 +14,11 @@ const formatDate = (dateStr) => {
 };
 
 const RegionalCommunications = () => {
-  const { user } = useSelector((state) => state.auth);
-  const region = user?.region;
+  const dispatch = useDispatch();
 
   const [activeTab, setActiveTab] = useState('compose');
   const [campuses, setCampuses] = useState([]);
   const [loadingCampuses, setLoadingCampuses] = useState(true);
-  const [history, setHistory] = useState(loadHistory);
   const [showPreview, setShowPreview] = useState(false);
 
   const [title, setTitle] = useState('');
@@ -43,6 +32,8 @@ const RegionalCommunications = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsItem, setDetailsItem] = useState(null);
   const [resendState, setResendState] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -65,6 +56,22 @@ const RegionalCommunications = () => {
     return () => { mounted = false; };
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const result = await dispatch(fetchAllAnnouncements()).unwrap();
+      setHistory(result || []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -79,44 +86,34 @@ const RegionalCommunications = () => {
     setShowPreview(false);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!title.trim()) { showToast('Please enter an announcement title.', 'error'); return; }
     if (!message.trim()) { showToast('Please enter an announcement message.', 'error'); return; }
     if (!portalNotification && !emailAlert) { showToast('Select at least one delivery option.', 'error'); return; }
 
+    const targetLabel = targetAudience === 'all'
+      ? 'All Campuses'
+      : campuses.find((c) => String(c.id) === targetAudience)?.name || targetAudience;
+
     setSending(true);
-    setTimeout(() => {
-      const targetLabel = targetAudience === 'all'
-        ? 'All Campuses'
-        : campuses.find((c) => String(c.id) === targetAudience)?.name || targetAudience;
-
-      const deliveryLabels = [];
-      if (portalNotification) deliveryLabels.push('Portal Notification');
-      if (emailAlert) deliveryLabels.push('Email Alert');
-
-      const recipientCount = targetAudience === 'all' ? campuses.length : 1;
-
-      const entry = {
-        id: Date.now(),
+    try {
+      await dispatch(createAnnouncement({
         title: title.trim(),
-        message: message.trim(),
+        body: message.trim(),
         target: targetLabel,
         targetValue: targetAudience,
-        recipientCount,
-        delivery: deliveryLabels.join(', '),
         portalNotification,
         emailAlert,
-        sentAt: new Date().toISOString(),
-        sender: user?.fullName || user?.email || 'National Leader',
-      };
-
-      const updated = [entry, ...history];
-      setHistory(updated);
-      saveHistory(updated);
+      })).unwrap();
       resetForm();
-      setSending(false);
       showToast('Announcement sent successfully!');
-    }, 800);
+      await loadHistory();
+    } catch (err) {
+      const msg = err?.message || 'Failed to send announcement. Please try again.';
+      showToast(msg, 'error');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handlePreview = () => {
@@ -127,10 +124,14 @@ const RegionalCommunications = () => {
     resetForm();
   };
 
-  const handleDeleteHistory = (id) => {
-    const updated = history.filter((h) => h.id !== id);
-    setHistory(updated);
-    saveHistory(updated);
+  const handleDeleteHistory = async (id) => {
+    try {
+      await dispatch(deleteAnnouncement(id)).unwrap();
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      showToast('Announcement deleted successfully.');
+    } catch {
+      showToast('Failed to delete announcement.', 'error');
+    }
   };
 
   const handleViewDetails = (h) => {
@@ -138,21 +139,24 @@ const RegionalCommunications = () => {
     setDetailsOpen(true);
   };
 
-  const handleResend = (h) => {
+  const handleResend = async (h) => {
     setResendState(h.id);
-    setTimeout(() => {
-      const entry = {
-        ...h,
-        id: Date.now(),
-        sentAt: new Date().toISOString(),
-        sender: user?.fullName || user?.email || 'National Leader',
-      };
-      const updated = [entry, ...history];
-      setHistory(updated);
-      saveHistory(updated);
-      setResendState(null);
+    try {
+      await dispatch(createAnnouncement({
+        title: h.title,
+        body: h.body,
+        target: h.target,
+        targetValue: h.targetValue || 'all',
+        portalNotification: h.portalNotification ?? true,
+        emailAlert: h.emailAlert ?? false,
+      })).unwrap();
       showToast('Announcement resent successfully!');
-    }, 700);
+      await loadHistory();
+    } catch {
+      showToast('Failed to resend announcement.', 'error');
+    } finally {
+      setResendState(null);
+    }
   };
 
   const targetLabel = () => {
@@ -591,7 +595,7 @@ const RegionalCommunications = () => {
                         <span style={{ fontWeight: 600, color: '#0A0A0A' }}>Recipient:</span> {h.recipientCount || 1} {h.recipientCount > 1 || h.targetValue === 'all' ? 'campuses' : 'campus'}
                       </span>
                       <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#4A5565' }}>
-                        <span style={{ fontWeight: 600, color: '#0A0A0A' }}>Sent:</span> {formatDate(h.sentAt)}
+                        <span style={{ fontWeight: 600, color: '#0A0A0A' }}>Sent:</span> {formatDate(h.createdAt || h.sentAt)}
                       </span>
                     </div>
 
@@ -686,7 +690,7 @@ const RegionalCommunications = () => {
                 </p>
                 <div style={{ height: '1px', background: '#F0F0F2', margin: '10px 0' }} />
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#717182', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                  {detailsItem.message}
+                  {detailsItem.body || detailsItem.message}
                 </p>
               </div>
 
@@ -701,11 +705,14 @@ const RegionalCommunications = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 500, color: '#0A0A0A' }}>Sent</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#717182' }}>{formatDate(detailsItem.sentAt)}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#717182' }}>{formatDate(detailsItem.createdAt || detailsItem.sentAt)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 500, color: '#0A0A0A' }}>Method</span>
-                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#717182' }}>{detailsItem.delivery}</span>
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 400, color: '#717182' }}>
+                    {[detailsItem.portalNotification && 'Portal Notification', detailsItem.emailAlert && 'Email Alert']
+                      .filter(Boolean).join(', ') || detailsItem.delivery || 'None'}
+                  </span>
                 </div>
               </div>
 

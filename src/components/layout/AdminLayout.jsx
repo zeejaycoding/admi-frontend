@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar';
+import NotificationBell from './NotificationBell';
 
 // Underlying pages/components are shared across ADMIN, COORDINATOR and
 // NATIONAL_LEADER, but each role gets its own URL prefix:
@@ -97,6 +98,9 @@ const AdminLayout = () => {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           Menu
         </button>
+        <div className="flex justify-end mb-3">
+          <NotificationBell />
+        </div>
         <div className="w-full max-w-none">
           <Outlet />
         </div>

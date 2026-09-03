@@ -30,7 +30,7 @@ export const createCertificate = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await marriageCertificateService.create(data);
-      return response.data;
+      return response.data?.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: 'Failed to create marriage certificate' });
     }
@@ -54,7 +54,7 @@ export const updateMarriageStatus = createAsyncThunk(
   async ({ id, status, rejectionReason }, { rejectWithValue }) => {
     try {
       const response = await marriageCertificateService.updateStatus(id, status, rejectionReason);
-      return response.data;
+      return response.data?.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: 'Failed to update status' });
     }

@@ -152,10 +152,10 @@ const AppRoutes = () => {
           <Route path="/mentoring-academy/:lang" element={<AbelDaminaMentoringAcademyForm />} />
 
           <Route
-            path="/course-player/:courseId"
+            path="regional-communications"
             element={
-              <ProtectedRoute>
-                <CoursePlayer />
+              <ProtectedRoute roles={['NATIONAL_LEADER']}>
+                <RegionalCommunications />
               </ProtectedRoute>
             }
           />
