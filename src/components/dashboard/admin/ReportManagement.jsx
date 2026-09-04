@@ -80,6 +80,7 @@ const ReportManagement = () => {
       return {
         Date: report.date || "—",
         Country: report.country || "—",
+        "Submitted By": report.submittedBy || "—",
         "National Leader": report.nationalLeader || "—",
         Campus: report.campus || "—",
         Coordinator: report.coordinator || "—",
@@ -151,7 +152,8 @@ const ReportManagement = () => {
           report.country?.toLowerCase().includes(term) ||
           report.nationalLeader?.toLowerCase().includes(term) ||
           report.campus?.toLowerCase().includes(term) ||
-          report.coordinator?.toLowerCase().includes(term),
+          report.coordinator?.toLowerCase().includes(term) ||
+          report.submittedBy?.toLowerCase().includes(term),
       );
     }
     if (statusFilter === "approved") {
@@ -789,6 +791,31 @@ const ReportManagement = () => {
                 >
                   {params.row.coordinator || "—"}
                 </Typography>
+              ),
+            },
+            {
+              field: "submittedBy",
+              headerName: "Submitted By",
+              width: 170,
+              align: "left",
+              headerAlign: "left",
+              renderCell: (params) => (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    justifyContent: "flex-start",
+                    width: "100%",
+                  }}
+                >
+                  <Users size={14} color="#90A1B9" />
+                  <Typography
+                    sx={{ fontSize: "14px", fontWeight: 400, color: "#45556C" }}
+                  >
+                    {params.row.submittedBy || "—"}
+                  </Typography>
+                </Box>
               ),
             },
             {
