@@ -79,6 +79,29 @@ const userService = {
     return data;
   },
 
+  // Get available roles for assignment (Admin)
+  async getAvailableRoles() {
+    const res = await apiClient.get('/roles');
+    const nameToRole = {};
+    (res.data?.data || []).forEach((r) => { nameToRole[r.name] = r; });
+    const order = [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'NATIONAL_LEADER',
+      'COORDINATOR',
+      'USER',
+      'STUDENT',
+      'CUSTOMER',
+    ];
+    const roles = order
+      .filter((name) => nameToRole[name])
+      .map((name) => ({ roleName: name, label: name }));
+    (res.data?.data || []).forEach((r) => {
+      if (!order.includes(r.name)) roles.push({ roleName: r.name, label: r.name });
+    });
+    return { ...res.data, data: roles };
+  },
+
   // Create user (Admin)
   async createUser(payload) {
     const { data } = await apiClient.post('/users/create', payload);
